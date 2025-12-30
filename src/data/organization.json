@@ -1,0 +1,12 @@
+{
+  "entity": "Organization",
+  "name": "SurakshaTech Solutions Pvt Ltd",
+  "domain": "surakshatech.in",
+  "locations": ["Hyderabad", "Pune"],
+  "findings": {
+    "web": ["Exposed subdomains"],
+    "github": ["Misconfigured repository"],
+    "darkweb": ["Credential reference observed"],
+    "geo": ["Multiple offices sharing infrastructure zones"]
+  }
+}
