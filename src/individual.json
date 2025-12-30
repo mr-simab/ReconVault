@@ -1,0 +1,14 @@
+{
+  "entity": "Individual",
+  "name": "Aarav Mehta",
+  "education": ["IIT Kharagpur"],
+  "github": "aaravm",
+  "social": ["twitter/aaravm"],
+  "location": "Bengaluru",
+  "findings": {
+    "github": ["Public repositories", "Commit email exposed"],
+    "social": ["High activity in tech discussions"],
+    "darkweb": ["Email referenced in credential dump"],
+    "geo": ["Office proximity to major tech parks"]
+  }
+}
