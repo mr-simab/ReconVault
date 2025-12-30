@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global cyber theme */
+body {
+  font-family: "JetBrains Mono", monospace;
+  background: radial-gradient(circle at top, #020617, #000000);
+}
+
+/* Glow utilities */
+.glow {
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.6);
+}
+
+.glow-text {
+  text-shadow: 0 0 8px rgba(34, 211, 238, 0.8);
+}
+
+/* Animated scanline */
+.scanline {
+  position: fixed;
+  width: 100%;
+  height: 2px;
+  background: rgba(34, 211, 238, 0.2);
+  animation: scan 6s linear infinite;
+  z-index: 50;
+}
+
+@keyframes scan {
+  from {
+    top: 0;
+  }
+  to {
+    top: 100%;
+  }
+}
+footer{
+    text-align:center;
+    padding:12px;
+    font-size:12px;
+    background:#081c2f;
+    opacity:0.9;
+}
