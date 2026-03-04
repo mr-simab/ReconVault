@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { useGraph } from './hooks/useGraph';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useToast } from './components/Common/Toast';
+import { collectionAPI } from './services/api';
+import { API_CONFIG } from './utils/constants';
 
 // Layout Components
 import TopHeader from './components/Panels/TopHeader';
@@ -29,6 +31,7 @@ function App() {
   const [selectedEdge, setSelectedEdge] = useState(null);
   const [graphContainerSize, setGraphContainerSize] = useState({ width: 800, height: 600 });
   const [activeView, setActiveView] = useState('graph'); // 'graph' or 'compliance'
+  const [collectionStarting, setCollectionStarting] = useState(false);
 
   // Hooks
   const {
@@ -60,7 +63,7 @@ function App() {
     }
   }, [wsConnected, addEventListener, showError]);
 
-  // Sample data for demonstration
+  // Sample data fallback for demo/degraded mode
   const [sampleData] = useState({
     nodes: [
       {
@@ -299,21 +302,36 @@ function App() {
 
   // Collection handlers
   const handleStartCollection = useCallback(async (config) => {
+    if (collectionStarting) return;
     try {
+      const target = String(config?.target || '').trim();
+      const types = Array.isArray(config?.types) ? config.types : [];
+      if (!target || types.length === 0) {
+        showError('Target and at least one collection type are required.');
+        return;
+      }
+
+      setCollectionStarting(true);
       showLoading('Starting intelligence collection...');
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      success(`Collection started for ${config.target}`);
-      
-      // In real app, this would start the actual collection process
-      console.log('Collection started:', config);
-      
+
+      const payload = {
+        target,
+        types,
+        includeDarkWeb: Boolean(config?.options?.includeDarkWeb),
+        includeMedia: Boolean(config?.options?.includeMedia),
+        collectors: types
+      };
+
+      const result = await collectionAPI.startCollection(payload.target, payload.types, payload);
+      success(`Collection started for ${target} (task: ${result?.task_id || result?.taskId || 'unknown'})`);
+      console.log('Collection started:', { config, result });
+
     } catch (error) {
       showError('Failed to start collection: ' + error.message);
+    } finally {
+      setCollectionStarting(false);
     }
-  }, [success, showError, showLoading]);
+  }, [collectionStarting, success, showError, showLoading]);
 
   const handleEntityAction = useCallback((action, entity) => {
     console.log('Entity action:', action, entity);
@@ -414,7 +432,8 @@ function App() {
   useEffect(() => {
     const checkBackendConnection = async () => {
       try {
-        const response = await fetch('http://localhost:8000/health');
+        const healthBase = API_CONFIG.BASE_URL.replace(/\/api\/v1\/?$/, '');
+        const response = await fetch(`${healthBase}/health`);
         if (!response.ok) throw new Error('Backend not responding');
         setBackendConnected(true);
       } catch (error) {
@@ -493,8 +512,8 @@ function App() {
           <div className="flex-1 relative">
             {activeView === 'graph' ? (
               <GraphCanvas
-                nodes={sampleData.nodes}
-                edges={sampleData.edges}
+                nodes={nodes.length > 0 ? nodes : sampleData.nodes}
+                edges={edges.length > 0 ? edges : sampleData.edges}
                 selectedNode={selectedNode}
                 selectedEdge={selectedEdge}
                 onNodeSelect={handleNodeSelect}

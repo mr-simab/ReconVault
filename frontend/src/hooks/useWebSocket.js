@@ -21,19 +21,22 @@ export const useWebSocket = (autoConnect = true) => {
   
   // Connect to WebSocket
   const connect = useCallback(() => {
-    if (!connected && !connecting) {
+    const state = webSocketService.getState();
+    if (!state.connected && !state.connecting) {
       console.log('[useWebSocket] Connecting...');
+      setConnecting(true);
       webSocketService.connect();
     }
-  }, [connected, connecting]);
+  }, []);
   
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
-    if (connected || connecting) {
+    const state = webSocketService.getState();
+    if (state.connected || state.connecting) {
       console.log('[useWebSocket] Disconnecting...');
       webSocketService.disconnect();
     }
-  }, [connected, connecting]);
+  }, []);
   
   // Manually reconnect
   const reconnect = useCallback(() => {
@@ -165,8 +168,7 @@ export const useWebSocket = (autoConnect = true) => {
     }
     
     return () => {
-      // Cleanup on unmount
-      webSocketService.removeAllListeners();
+      // Listener cleanup is handled by each unsubscribe above.
     };
   }, [autoConnect, connect]);
   

@@ -42,6 +42,8 @@ export const useGraph = (initialFilters = {}) => {
   const nodeCountRef = useRef(0);
   const edgeCountRef = useRef(0);
   const filtersRef = useRef(filters);
+  const loadInFlightRef = useRef(false);
+  const wsReloadCooldownRef = useRef(0);
   const perfMetricsRef = useRef({
     fps: 0,
     renderTime: 0,
@@ -56,6 +58,8 @@ export const useGraph = (initialFilters = {}) => {
   // Load graph data
   const loadGraphData = useCallback(async (newFilters) => {
     const effectiveFilters = newFilters ?? filtersRef.current;
+    if (loadInFlightRef.current) return;
+    loadInFlightRef.current = true;
 
     setLoading(true);
     setError(null);
@@ -74,9 +78,13 @@ export const useGraph = (initialFilters = {}) => {
         `[useGraph] Loaded ${data.nodes.length} nodes and ${data.edges.length} edges`
       );
     } catch (err) {
+      if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
+        return;
+      }
       console.error('[useGraph] Error loading graph data:', err);
       setError(err.message || 'Failed to load graph data');
     } finally {
+      loadInFlightRef.current = false;
       setLoading(false);
     }
   }, []);
@@ -216,6 +224,9 @@ export const useGraph = (initialFilters = {}) => {
 
     // Subscribe to WebSocket events
     const unsubscribeWSConnected = webSocketService.onConnected(() => {
+      const now = Date.now();
+      if (now - wsReloadCooldownRef.current < 1500) return;
+      wsReloadCooldownRef.current = now;
       console.log('[useGraph] WebSocket connected, reloading data');
       loadGraphData();
     });

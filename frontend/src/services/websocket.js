@@ -159,6 +159,10 @@ class WebSocketService {
           console.error('[WebSocket] Server error:', data.payload);
           this.emit('error', data.payload);
           break;
+        case 'connected':
+          // Initial informational message from backend.
+          this.emit('message', data);
+          break;
         default:
           console.warn('[WebSocket] Unknown message type:', data.type);
           this.emit('message', data);

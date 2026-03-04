@@ -152,7 +152,11 @@ const LeftSidebar = ({
                         key={type}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => onStartCollection('', [type])}
+                        onClick={() => onStartCollection({
+                          target: '',
+                          types: [type],
+                          options: {}
+                        })}
                         className="
                           px-3 py-2 text-xs font-mono rounded border border-cyber-border
                           bg-cyber-light text-cyber-gray hover:text-neon-green hover:border-neon-green

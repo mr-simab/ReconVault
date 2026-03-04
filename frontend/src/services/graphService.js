@@ -47,6 +47,10 @@ class GraphService {
       return processedData;
       
     } catch (error) {
+      if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
+        // Duplicate requests can be cancelled by API deduplication; this is expected.
+        return this.getCachedGraphData();
+      }
       console.error('[GraphService] Error loading graph data:', error);
       throw error;
     }
