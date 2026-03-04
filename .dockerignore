@@ -1,0 +1,13 @@
+# Docker ignore file
+.git
+.gitignore
+.dockerignore
+.env
+*.md
+*.log
+__pycache__/
+node_modules/
+Dockerfile
+docker-compose.yml
+README.md
+LICENSE

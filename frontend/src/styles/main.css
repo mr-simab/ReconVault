@@ -1,0 +1,362 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Import custom styles */
+@import './theme.css';
+@import './animations.css';
+@import './graph.css';
+
+/* Global component styles */
+@layer components {
+  /* Cyber Button Variants */
+  .btn-cyber-primary {
+    @apply cyber-button bg-transparent border-neon-green text-neon-green;
+  }
+  
+  .btn-cyber-primary:hover {
+    @apply bg-neon-green text-cyber-black;
+  }
+  
+  .btn-cyber-secondary {
+    @apply cyber-button border-neon-cyan text-neon-cyan;
+  }
+  
+  .btn-cyber-secondary:hover {
+    @apply bg-neon-cyan text-cyber-black;
+  }
+  
+  .btn-cyber-danger {
+    @apply cyber-button border-danger-red text-danger-red;
+  }
+  
+  .btn-cyber-danger:hover {
+    @apply bg-danger-red text-white;
+  }
+  
+  .btn-cyber-ghost {
+    @apply cyber-button border-cyber-border text-cyber-gray;
+  }
+  
+  .btn-cyber-ghost:hover {
+    @apply border-neon-green text-neon-green;
+  }
+
+  /* Input Variants */
+  .input-cyber {
+    @apply cyber-input;
+  }
+  
+  .input-cyber-search {
+    @apply cyber-input pr-10;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2300ff41' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1.5em 1.5em;
+  }
+
+  /* Card Variants */
+  .card-cyber {
+    @apply cyber-card;
+  }
+  
+  .card-cyber-dark {
+    @apply glass-panel-dark;
+  }
+  
+  .card-cyber-glow {
+    @apply cyber-card border-neon-green;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+  }
+
+  /* Badge Variants */
+  .badge-critical {
+    @apply cyber-badge bg-danger-red text-white;
+  }
+  
+  .badge-high {
+    @apply cyber-badge bg-neon-orange text-cyber-black;
+  }
+  
+  .badge-medium {
+    @apply cyber-badge bg-warning-yellow text-cyber-black;
+  }
+  
+  .badge-low {
+    @apply cyber-badge bg-safe-green text-cyber-black;
+  }
+  
+  .badge-info {
+    @apply cyber-badge bg-neon-cyan text-cyber-black;
+  }
+
+  /* Panel Layouts */
+  .panel-sidebar {
+    @apply glass-panel h-full overflow-y-auto;
+  }
+  
+  .panel-header {
+    @apply border-b border-cyber-border pb-4 mb-4;
+  }
+  
+  .panel-content {
+    @apply space-y-4;
+  }
+
+  /* Status Indicators */
+  .status-connected {
+    @apply text-safe-green;
+  }
+  
+  .status-disconnected {
+    @apply text-danger-red;
+  }
+  
+  .status-connecting {
+    @apply text-warning-yellow animate-pulse;
+  }
+  
+  .status-warning {
+    @apply text-warning-yellow;
+  }
+
+  /* Form Elements */
+  .form-group {
+    @apply space-y-2;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-neon-green;
+  }
+  
+  .form-error {
+    @apply text-danger-red text-xs mt-1;
+  }
+  
+  .form-help {
+    @apply text-cyber-gray text-xs mt-1;
+  }
+
+  /* Navigation */
+  .nav-cyber {
+    @apply flex space-x-1;
+  }
+  
+  .nav-cyber-item {
+    @apply px-3 py-2 rounded-md text-sm font-medium transition-colors;
+  }
+  
+  .nav-cyber-item.active {
+    @apply bg-neon-green text-cyber-black;
+  }
+  
+  .nav-cyber-item:not(.active) {
+    @apply text-cyber-gray hover:text-neon-green hover:bg-cyber-light;
+  }
+
+  /* Loading States */
+  .loading-spinner {
+    @apply cyber-spinner;
+  }
+  
+  .loading-dots::after {
+    content: '';
+    animation: loading-dots 1.5s infinite;
+  }
+  
+  .loading-bars::after {
+    content: '';
+    animation: loading-bars 1.5s infinite;
+  }
+
+  /* Text Utilities */
+  .text-cyber-mono {
+    font-family: var(--font-mono);
+  }
+  
+  .text-cyber-title {
+    font-family: var(--font-cyber);
+    @apply text-neon-green text-shadow-neon;
+  }
+  
+  .text-cyber-subtitle {
+    @apply text-cyber-gray;
+  }
+
+  /* Layout Utilities */
+  .layout-full-height {
+    height: 100vh;
+  }
+  
+  .layout-sidebar-fixed {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    overflow-y: auto;
+  }
+  
+  .layout-main-scrollable {
+    overflow-y: auto;
+    height: 100vh;
+  }
+
+  /* Grid Layouts */
+  .grid-cyber {
+    display: grid;
+    gap: var(--spacing-md);
+  }
+  
+  .grid-cyber-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .grid-cyber-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .grid-cyber-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* Responsive Grid */
+  @media (max-width: 768px) {
+    .grid-cyber-2,
+    .grid-cyber-3,
+    .grid-cyber-4 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Interactive Elements */
+  .interactive-hover {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-glow-green;
+  }
+  
+  .interactive-click {
+    @apply transition-all duration-150 active:scale-95;
+  }
+  
+  .interactive-glow {
+    @apply transition-all duration-300 hover:shadow-glow-cyan;
+  }
+
+  /* Scrollable Areas */
+  .scrollable-cyber {
+    scrollbar-width: thin;
+    scrollbar-color: var(--cyber-border) var(--cyber-dark);
+  }
+  
+  .scrollable-cyber::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollable-cyber::-webkit-scrollbar-track {
+    background: var(--cyber-dark);
+  }
+  
+  .scrollable-cyber::-webkit-scrollbar-thumb {
+    background: var(--cyber-border);
+    border-radius: 3px;
+  }
+  
+  .scrollable-cyber::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-green);
+  }
+
+  /* Modal/Dialog */
+  .modal-overlay {
+    @apply fixed inset-0 bg-cyber-black bg-opacity-80 backdrop-blur-sm z-50;
+  }
+  
+  .modal-content {
+    @apply glass-panel-dark max-w-lg mx-auto mt-20 p-6;
+  }
+  
+  .modal-header {
+    @apply flex justify-between items-center mb-4 pb-4 border-b border-cyber-border;
+  }
+  
+  .modal-body {
+    @apply mb-4;
+  }
+  
+  .modal-footer {
+    @apply flex justify-end space-x-2 pt-4 border-t border-cyber-border;
+  }
+
+  /* Dropdown */
+  .dropdown {
+    @apply relative inline-block text-left;
+  }
+  
+  .dropdown-menu {
+    @apply absolute right-0 mt-2 w-56 glass-panel-dark z-50;
+  }
+  
+  .dropdown-item {
+    @apply block px-4 py-2 text-sm text-neon-green hover:bg-cyber-light hover:text-neon-cyan cursor-pointer;
+  }
+
+  /* Tabs */
+  .tabs-cyber {
+    @apply border-b border-cyber-border;
+  }
+  
+  .tabs-cyber-list {
+    @apply flex space-x-8;
+  }
+  
+  .tabs-cyber-item {
+    @apply py-2 px-1 border-b-2 border-transparent font-medium text-sm cursor-pointer;
+  }
+  
+  .tabs-cyber-item.active {
+    @apply border-neon-green text-neon-green;
+  }
+  
+  .tabs-cyber-item:not(.active) {
+    @apply text-cyber-gray hover:text-neon-green;
+  }
+
+  /* Progress Bars */
+  .progress-cyber {
+    @apply w-full bg-cyber-dark rounded-full h-2;
+  }
+  
+  .progress-cyber-bar {
+    @apply h-2 rounded-full transition-all duration-300;
+  }
+  
+  .progress-cyber-bar.critical {
+    @apply bg-danger-red;
+  }
+  
+  .progress-cyber-bar.high {
+    @apply bg-neon-orange;
+  }
+  
+  .progress-cyber-bar.medium {
+    @apply bg-warning-yellow;
+  }
+  
+  .progress-cyber-bar.low {
+    @apply bg-safe-green;
+  }
+  
+  .progress-cyber-bar.info {
+    @apply bg-neon-cyan;
+  }
+}
+
+/* Global overrides */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+#root {
+  height: 100%;
+  min-height: 100vh;
+}

@@ -1,0 +1,119 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: reconvault-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-8000}
+      - HOST=${HOST:-0.0.0.0}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://reconvault_user:changeme@postgres:5432/reconvault}
+      - HIBP_API_KEY=${HIBP_API_KEY:-}
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-}
+      - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - SHODAN_API_KEY=${SHODAN_API_KEY:-}
+      - BUILTWITH_API_KEY=${BUILTWITH_API_KEY:-}
+      - WAPPALYZER_API_KEY=${WAPPALYZER_API_KEY:-}
+      - GOOGLE_VISION_API_KEY=${GOOGLE_VISION_API_KEY:-}
+      - OCR_SPACE_API_KEY=${OCR_SPACE_API_KEY:-}
+      - FACEPP_API_KEY=${FACEPP_API_KEY:-}
+      - FACEPP_API_SECRET=${FACEPP_API_SECRET:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - reconvault-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    image: node:18-alpine
+    container_name: reconvault-frontend
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - FRONTEND_PORT=${FRONTEND_PORT:-5173}
+      - FRONTEND_HOST=${FRONTEND_HOST:-0.0.0.0}
+      - NODE_ENV=${FRONTEND_NODE_ENV:-development}
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+      - VITE_WS_URL=${VITE_WS_URL:-ws://localhost:8000}
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      - backend
+    networks:
+      - reconvault-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: reconvault-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-reconvault}
+      - POSTGRES_USER=${POSTGRES_USER:-reconvault_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/postgres:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - reconvault-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reconvault_user -d reconvault"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: reconvault-nginx
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - nginx_logs:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - reconvault-network
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  reconvault-network:
+    driver: bridge
+    name: reconvault-network
+
+volumes:
+  frontend_node_modules:
+    driver: local
+  postgres_data:
+    driver: local
+  nginx_logs:
+    driver: local

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ReconVault - Next-generation cyber reconnaissance and intelligence platform with graph-based visualization" />
+    <meta name="theme-color" content="#111827" />
+    <title>ReconVault - Cyber Intelligence Platform</title>
+    <style>
+      /* Loading screen styles */
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        color: #60a5fa;
+      }
+      
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(96, 165, 250, 0.2);
+        border-top-color: #60a5fa;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      .loading-text {
+        margin-top: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        font-size: 18px;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Loading screen -->
+    <div id="loading-screen">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading ReconVault...</div>
+    </div>
+    
+    <!-- React root -->
+    <div id="root"></div>
+    
+    <!-- Main application entry point -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
