@@ -264,7 +264,7 @@ const GraphCanvas = ({
   // Force simulation configuration
   const d3ForceConfig = useMemo(() => ({
     link: {
-      distance: 80,
+      distance: 110,
       strength: 0.1
     },
     charge: {
@@ -274,7 +274,7 @@ const GraphCanvas = ({
       strength: 0.1
     },
     collision: {
-      radius: 20
+      radius: (node) => Math.max(28, (node.size || 8) + 18)
     }
   }), [enablePhysics]);
 
@@ -306,6 +306,12 @@ const GraphCanvas = ({
     fgRef.current.d3ReheatSimulation?.();
   }, [graphReady, d3ForceConfig]);
 
+  useEffect(() => {
+    if (filteredData.nodes.length === 0) {
+      setGraphReady(true);
+    }
+  }, [filteredData.nodes.length]);
+
   return (
     <div className={`relative bg-cyber-black ${className}`}>
       {/* Graph Canvas */}
@@ -328,6 +334,7 @@ const GraphCanvas = ({
         linkDirectionalParticles={2}
         linkDirectionalParticleWidth={2}
         backgroundColor="#0a0e27"
+        d3VelocityDecay={0.36}
         enableNodeDrag={true}
         enableZoomInteraction={true}
         enablePanInteraction={true}
@@ -336,7 +343,7 @@ const GraphCanvas = ({
       />
 
       {/* Loading Overlay */}
-      {!graphReady && (
+      {!graphReady && filteredData.nodes.length > 0 && (
         <div className="absolute inset-0 flex items-center justify-center bg-cyber-black bg-opacity-80">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
@@ -346,6 +353,15 @@ const GraphCanvas = ({
             <div className="loading-spinner mb-4" />
             <p className="text-neon-green font-mono">Initializing graph...</p>
           </motion.div>
+        </div>
+      )}
+
+      {graphReady && filteredData.nodes.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-cyber-black">
+          <div className="mx-4 max-w-md rounded border border-cyber-border bg-cyber-dark/90 p-5 text-center shadow-lg">
+            <p className="text-sm font-mono text-neon-green">No intelligence entities collected yet.</p>
+            <p className="mt-2 text-xs text-cyber-gray">Start a collection to populate the live graph.</p>
+          </div>
         </div>
       )}
 

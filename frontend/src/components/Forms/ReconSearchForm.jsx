@@ -1,7 +1,28 @@
-// Recon Search Form Component - Target input and collection controls
+// Recon Search Form Component - target input and collection controls
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { COLLECTION_TYPES } from '../../utils/constants';
+import GlassIcon from '../Common/GlassIcon';
+
+const collectionTypeIcons = {
+  web: 'globe',
+  social: 'user',
+  domain: 'network',
+  ip: 'link',
+  email: 'email',
+  media: 'media',
+  darkweb: 'darkweb'
+};
+
+const collectionTypeDescriptions = {
+  web: 'Web surface and content signals',
+  social: 'Social profile and mention signals',
+  domain: 'WHOIS, DNS, and domain posture',
+  ip: 'IP reputation and geolocation',
+  email: 'Mailbox and breach exposure',
+  media: 'Image and media intelligence',
+  darkweb: 'Dark web exposure checks'
+};
 
 const ReconSearchForm = ({
   onStartCollection = () => {},
@@ -19,280 +40,195 @@ const ReconSearchForm = ({
   const [customOptions, setCustomOptions] = useState({});
 
   const handleTypeToggle = (type) => {
-    setSelectedTypes(prev => 
+    setSelectedTypes((prev) =>
       prev.includes(type)
-        ? prev.filter(t => t !== type)
+        ? prev.filter((item) => item !== type)
         : [...prev, type]
     );
   };
 
   const handleOptionToggle = (option) => {
-    setOptions(prev => ({
+    setOptions((prev) => ({
       ...prev,
       [option]: !prev[option]
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
     if (!target.trim() || selectedTypes.length === 0) {
       return;
     }
 
-    const collectionConfig = {
+    onStartCollection({
       target: target.trim(),
       types: selectedTypes,
       options: {
         ...options,
         ...customOptions
       }
-    };
-
-    onStartCollection(collectionConfig);
+    });
   };
 
   const isFormValid = target.trim() && selectedTypes.length > 0;
 
-  const collectionTypeIcons = {
-    web: '🌐',
-    social: '📱',
-    domain: '🌍',
-    ip: '🔗',
-    email: '✉️',
-    media: '🖼️',
-    darkweb: '🌑'
-  };
+  const advancedOptions = [
+    { key: 'includeDarkWeb', label: 'Dark web', icon: 'darkweb' },
+    { key: 'includeMedia', label: 'Media analysis', icon: 'media' },
+    { key: 'deepScan', label: 'Deep scan', icon: 'search' },
+    { key: 'realTimeUpdates', label: 'Real-time updates', icon: 'websocket' }
+  ];
 
-  const collectionTypeDescriptions = {
-    web: 'Web scraping and content analysis',
-    social: 'Social media profiling and monitoring',
-    domain: 'Domain research and DNS analysis',
-    ip: 'IP address geolocation and reputation',
-    email: 'Email address verification and analysis',
-    media: 'Image and video reverse search',
-    darkweb: 'Dark web monitoring and analysis'
-  };
+  const presets = [
+    { label: 'Domain Research', types: ['domain', 'web'], icon: 'network' },
+    { label: 'Social Investigation', types: ['social', 'email'], icon: 'user' },
+    { label: 'IP Analysis', types: ['ip', 'web'], icon: 'link' },
+    { label: 'Full Profile', types: ['domain', 'social', 'email', 'ip'], icon: 'target' }
+  ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
+    <motion.form
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`space-y-6 ${className}`}
+      onSubmit={handleSubmit}
+      className={`space-y-5 ${className}`}
     >
-      {/* Target Input */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-neon-green">
-          Target Entity *
-        </label>
-        <input
-          type="text"
-          value={target}
-          onChange={(e) => setTarget(e.target.value)}
-          placeholder="Enter domain, email, IP, username, etc."
-          className="
-            w-full px-4 py-3 rounded-lg
-            bg-cyber-dark border border-cyber-border
-            text-neon-green placeholder-cyber-gray
-            font-mono text-sm
-            focus:border-neon-cyan focus:outline-none
-            transition-all duration-200
-          "
-          disabled={loading}
-        />
-        <p className="text-xs text-cyber-gray">
-          Specify the entity you want to investigate
-        </p>
-      </div>
-
-      {/* Collection Types */}
-      <div className="space-y-3">
-        <label className="block text-sm font-medium text-neon-green">
-          Collection Types *
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {COLLECTION_TYPES.map((type) => (
-            <motion.button
-              key={type}
-              type="button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleTypeToggle(type)}
-              disabled={loading}
-              className={`
-                p-3 rounded-lg border text-left transition-all duration-200
-                ${selectedTypes.includes(type)
-                  ? 'border-neon-cyan bg-neon-cyan bg-opacity-10 text-neon-cyan'
-                  : 'border-cyber-border bg-cyber-light text-cyber-gray hover:border-neon-green hover:text-neon-green'
-                }
-              `}
-            >
-              <div className="flex items-center space-x-2 mb-1">
-                <span className="text-lg">
-                  {collectionTypeIcons[type]}
-                </span>
-                <span className="font-mono text-sm font-medium capitalize">
-                  {type}
-                </span>
-                {selectedTypes.includes(type) && (
-                  <span className="text-xs">✓</span>
-                )}
-              </div>
-              <p className="text-xs opacity-75">
-                {collectionTypeDescriptions[type]}
-              </p>
-            </motion.button>
-          ))}
+        <label className="block text-sm font-medium text-neon-green">Target Entity</label>
+        <div className="relative">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neon-cyan">
+            <GlassIcon name="target" size="sm" bare />
+          </div>
+          <input
+            type="text"
+            value={target}
+            onChange={(event) => setTarget(event.target.value)}
+            placeholder="domain, email, IP, username"
+            className="w-full pl-11 pr-4 py-3 rounded-lg bg-cyber-dark border border-cyber-border text-neon-green placeholder-cyber-gray font-mono text-sm focus:border-neon-cyan focus:outline-none transition-all duration-200"
+            disabled={loading}
+          />
         </div>
       </div>
 
-      {/* Advanced Options */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-neon-green">
-          Collection Options
-        </label>
-        <div className="space-y-2">
-          {[
-            { key: 'includeDarkWeb', label: 'Include Dark Web Search', icon: '🌑' },
-            { key: 'includeMedia', label: 'Include Media Analysis', icon: '🖼️' },
-            { key: 'deepScan', label: 'Deep Scan Mode', icon: '🔍' },
-            { key: 'realTimeUpdates', label: 'Real-time Updates', icon: '⚡' }
-          ].map((option) => (
-            <motion.label
+        <div className="flex items-center justify-between">
+          <label className="block text-sm font-medium text-neon-green">Collectors</label>
+          <span className="text-[10px] text-cyber-gray uppercase">{selectedTypes.length} selected</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {COLLECTION_TYPES.map((type) => {
+            const selected = selectedTypes.includes(type);
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => handleTypeToggle(type)}
+                disabled={loading}
+                className={`rv-command-button p-3 text-left ${selected ? 'is-active' : ''}`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <GlassIcon name={collectionTypeIcons[type] || 'source'} size="xs" tone={selected ? 'green' : 'cyan'} />
+                  <span className="font-mono text-sm font-medium capitalize">{type}</span>
+                  {selected && <GlassIcon name="check" size="xs" tone="green" bare />}
+                </div>
+                <p className="text-[11px] text-cyber-gray leading-tight">{collectionTypeDescriptions[type]}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <label className="block text-sm font-medium text-neon-green">Collection Options</label>
+        <div className="grid grid-cols-2 gap-2">
+          {advancedOptions.map((option) => (
+            <label
               key={option.key}
-              whileHover={{ scale: 1.01 }}
-              className="
-                flex items-center space-x-3 p-3 rounded-lg
-                border border-cyber-border bg-cyber-light
-                hover:border-neon-green transition-colors cursor-pointer
-              "
+              className={`rv-command-button px-3 py-2 cursor-pointer flex items-center gap-2 ${options[option.key] ? 'is-active' : ''}`}
             >
               <input
                 type="checkbox"
                 checked={options[option.key]}
                 onChange={() => handleOptionToggle(option.key)}
                 disabled={loading}
-                className="
-                  w-4 h-4 rounded border-cyber-border
-                  bg-cyber-dark text-neon-green
-                  focus:ring-neon-cyan focus:ring-2
-                "
+                className="w-4 h-4 rounded border-cyber-border bg-cyber-dark text-neon-green focus:ring-neon-cyan focus:ring-2"
               />
-              <span className="text-lg">{option.icon}</span>
-              <span className="text-sm text-cyber-gray">{option.label}</span>
-            </motion.label>
+              <GlassIcon name={option.icon} size="xs" tone={options[option.key] ? 'green' : 'cyan'} />
+              <span className="text-xs text-cyber-gray">{option.label}</span>
+            </label>
           ))}
         </div>
       </div>
 
-      {/* Custom Configuration */}
       <details className="group">
-        <summary className="
-          cursor-pointer list-none p-3 rounded-lg
-          border border-cyber-border bg-cyber-light
-          hover:border-neon-purple transition-colors
-          text-sm font-medium text-neon-purple
-        ">
-          <span className="flex items-center space-x-2">
-            <span>⚙️</span>
+        <summary className="rv-command-button cursor-pointer list-none p-3 text-sm font-medium text-neon-purple">
+          <span className="flex items-center gap-2">
+            <GlassIcon name="settings" size="xs" tone="purple" />
             <span>Advanced Configuration</span>
-            <span className="text-xs opacity-75">
-              (Expand for custom settings)
-            </span>
           </span>
         </summary>
-        
-        <div className="mt-3 p-4 space-y-4 bg-cyber-dark rounded-lg border border-cyber-border">
+
+        <div className="mt-3 rv-panel-section p-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-neon-cyan mb-1">
-                Max Results
-              </label>
+              <label className="block text-xs font-medium text-neon-cyan mb-1">Max Results</label>
               <input
                 type="number"
                 min="1"
                 max="1000"
                 value={customOptions.maxResults || 100}
-                onChange={(e) => setCustomOptions(prev => ({
+                onChange={(event) => setCustomOptions((prev) => ({
                   ...prev,
-                  maxResults: parseInt(e.target.value)
+                  maxResults: parseInt(event.target.value, 10)
                 }))}
-                className="
-                  w-full px-3 py-2 rounded
-                  bg-cyber-black border border-cyber-border
-                  text-neon-green text-sm
-                  focus:border-neon-cyan focus:outline-none
-                "
+                className="w-full px-3 py-2 rounded bg-cyber-black border border-cyber-border text-neon-green text-sm focus:border-neon-cyan focus:outline-none"
                 disabled={loading}
               />
             </div>
-            
+
             <div>
-              <label className="block text-xs font-medium text-neon-cyan mb-1">
-                Timeout (seconds)
-              </label>
+              <label className="block text-xs font-medium text-neon-cyan mb-1">Timeout (seconds)</label>
               <input
                 type="number"
                 min="30"
                 max="3600"
                 value={customOptions.timeout || 300}
-                onChange={(e) => setCustomOptions(prev => ({
+                onChange={(event) => setCustomOptions((prev) => ({
                   ...prev,
-                  timeout: parseInt(e.target.value)
+                  timeout: parseInt(event.target.value, 10)
                 }))}
-                className="
-                  w-full px-3 py-2 rounded
-                  bg-cyber-black border border-cyber-border
-                  text-neon-green text-sm
-                  focus:border-neon-cyan focus:outline-none
-                "
+                className="w-full px-3 py-2 rounded bg-cyber-black border border-cyber-border text-neon-green text-sm focus:border-neon-cyan focus:outline-none"
                 disabled={loading}
               />
             </div>
           </div>
-          
+
           <div>
-            <label className="block text-xs font-medium text-neon-cyan mb-1">
-              Custom Tags
-            </label>
+            <label className="block text-xs font-medium text-neon-cyan mb-1">Case Tags</label>
             <input
               type="text"
-              value={customOptions.tags || ''}
-              onChange={(e) => setCustomOptions(prev => ({
+              value={Array.isArray(customOptions.tags) ? customOptions.tags.join(', ') : ''}
+              onChange={(event) => setCustomOptions((prev) => ({
                 ...prev,
-                tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean)
+                tags: event.target.value.split(',').map((tag) => tag.trim()).filter(Boolean)
               }))}
-              placeholder="tag1, tag2, tag3"
-              className="
-                w-full px-3 py-2 rounded
-                bg-cyber-black border border-cyber-border
-                text-neon-green text-sm
-                focus:border-neon-cyan focus:outline-none
-              "
+              placeholder="brand, phishing, vip"
+              className="w-full px-3 py-2 rounded bg-cyber-black border border-cyber-border text-neon-green text-sm focus:border-neon-cyan focus:outline-none"
               disabled={loading}
             />
-            <p className="text-xs text-cyber-gray mt-1">
-              Comma-separated tags for organizing results
-            </p>
           </div>
         </div>
       </details>
 
-      {/* Submit Button */}
-      <motion.button
+      <button
         type="submit"
-        onClick={handleSubmit}
         disabled={!isFormValid || loading}
-        whileHover={isFormValid ? { scale: 1.02 } : {}}
-        whileTap={isFormValid ? { scale: 0.98 } : {}}
-        className={`
-          w-full py-4 rounded-lg border font-mono font-medium
-          transition-all duration-200 flex items-center justify-center space-x-2
-          ${isFormValid && !loading
+        className={`w-full py-4 rounded-lg border font-mono font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+          isFormValid && !loading
             ? 'border-neon-green text-neon-green hover:bg-neon-green hover:text-cyber-black'
             : 'border-cyber-border text-cyber-gray cursor-not-allowed'
-          }
-        `}
+        }`}
       >
         {loading ? (
           <>
@@ -301,61 +237,39 @@ const ReconSearchForm = ({
           </>
         ) : (
           <>
-            <span>🚀</span>
+            <GlassIcon name="operations" size="xs" tone={isFormValid ? 'green' : 'muted'} />
             <span>Start Intelligence Collection</span>
           </>
         )}
-      </motion.button>
+      </button>
 
-      {/* Form Validation Messages */}
       {!isFormValid && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          className="p-3 bg-warning-yellow bg-opacity-10 border border-warning-yellow rounded-lg"
-        >
-          <div className="flex items-center space-x-2 text-warning-yellow">
-            <span>⚠️</span>
-            <span className="text-sm font-mono">
-              Please provide a target and select at least one collection type
-            </span>
+        <div className="p-3 bg-warning-yellow bg-opacity-10 border border-warning-yellow rounded-lg">
+          <div className="flex items-center gap-2 text-warning-yellow">
+            <GlassIcon name="alert" size="xs" tone="yellow" />
+            <span className="text-sm font-mono">Target and collector selection required</span>
           </div>
-        </motion.div>
+        </div>
       )}
 
-      {/* Quick Start Presets */}
       <div className="space-y-2">
-        <p className="text-xs font-medium text-cyber-gray">Quick Start Presets:</p>
+        <p className="text-xs font-medium text-cyber-gray">Presets</p>
         <div className="flex flex-wrap gap-2">
-          {[
-            { label: 'Domain Research', types: ['domain', 'web'], icon: '🌍' },
-            { label: 'Social Investigation', types: ['social', 'email'], icon: '📱' },
-            { label: 'IP Analysis', types: ['ip', 'web'], icon: '🔗' },
-            { label: 'Full Profile', types: ['domain', 'social', 'email', 'ip'], icon: '🎯' }
-          ].map((preset) => (
-            <motion.button
+          {presets.map((preset) => (
+            <button
               key={preset.label}
               type="button"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setTarget('');
-                setSelectedTypes(preset.types);
-              }}
-              className="
-                px-3 py-2 text-xs font-mono rounded border border-cyber-border
-                bg-cyber-light text-cyber-gray hover:text-neon-green hover:border-neon-green
-                transition-colors flex items-center space-x-1
-              "
+              onClick={() => setSelectedTypes(preset.types)}
+              className="rv-command-button px-3 py-2 text-xs font-mono flex items-center gap-1"
               disabled={loading}
             >
-              <span>{preset.icon}</span>
+              <GlassIcon name={preset.icon} size="xs" tone="cyan" />
               <span>{preset.label}</span>
-            </motion.button>
+            </button>
           ))}
         </div>
       </div>
-    </motion.div>
+    </motion.form>
   );
 };
 

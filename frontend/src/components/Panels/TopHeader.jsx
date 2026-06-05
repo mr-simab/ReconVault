@@ -1,28 +1,20 @@
-// Top Header Component - Status, search, filters
-import React, { useState, useEffect } from 'react';
+// Top Header Component - command search, view routing, and platform status
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useWebSocket } from '../../hooks/useWebSocket';
 import { useSearch } from '../../hooks/useSearch';
-import { ConnectionBadge, StatusBadge } from '../Common/Badge';
+import GlassIcon from '../Common/GlassIcon';
 
 const TopHeader = ({
   onSearch = () => {},
-  onFilterToggle = () => {},
   onMenuAction = () => {},
   className = '',
-  systemStatus = {},
-  showAdvancedFilters = false,
-  onAdvancedFiltersToggle = () => {}
+  activeView = 'graph',
+  serviceStatus = {},
+  backendConnected = true
 }) => {
-  const { 
-    connected: wsConnected, 
-    connecting: wsConnecting,
-    connectionQuality 
-  } = useWebSocket();
-  
-  const { 
-    query, 
-    updateQuery, 
+  const {
+    query,
+    updateQuery,
     search,
     results,
     hasResults,
@@ -32,192 +24,181 @@ const TopHeader = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
 
-  // Handle search submit
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
     if (isValidQuery && query.trim()) {
       onSearch(query);
       search(query);
     }
   };
 
-  // Handle search input change
-  const handleSearchChange = (e) => {
-    updateQuery(e.target.value);
+  const viewActions = [
+    { id: 'graph', action: 'home', label: 'Graph', icon: 'graph' },
+    { id: 'investigations', action: 'investigations', label: 'Investigation', icon: 'investigation' },
+    { id: 'operations', action: 'operations', label: 'Intelligence Ops', icon: 'operations' },
+    { id: 'compliance', action: 'compliance', label: 'Compliance', icon: 'shield' }
+  ];
+
+  const menuItems = [
+    { id: 'profile', label: 'Profile', icon: 'user', action: () => onMenuAction('profile') },
+    { id: 'help', label: 'Help & Docs', icon: 'help', action: () => onMenuAction('help') },
+    { id: 'about', label: 'About', icon: 'info', action: () => onMenuAction('about') },
+    { id: 'logout', label: 'Logout', icon: 'logout', action: () => onMenuAction('logout') }
+  ];
+
+  const toneForStatus = (status) => {
+    const normalized = String(status || '').toLowerCase();
+    if (['connected', 'healthy', 'ready', 'configured', 'live'].includes(normalized)) return 'green';
+    if (['checking', 'available', 'empty', 'partial', 'degraded'].includes(normalized)) return 'yellow';
+    if (['offline', 'disconnected', 'error', 'failed', 'unavailable'].includes(normalized)) return 'red';
+    return 'cyan';
   };
 
-  // System status indicators
-  const statusIndicators = [
+  const statusDotClass = {
+    green: 'text-safe-green',
+    yellow: 'text-warning-yellow',
+    red: 'text-danger-red',
+    cyan: 'text-neon-cyan'
+  };
+
+  const serviceItems = [
     {
-      key: 'backend',
-      label: 'Backend',
-      status: systemStatus.backend || 'unknown',
-      color: systemStatus.backend === 'healthy' ? 'safe-green' : 'danger-red'
-    },
-    {
-      key: 'database',
-      label: 'Database',
-      status: systemStatus.database || 'unknown',
-      color: systemStatus.database === 'connected' ? 'safe-green' : 'danger-red'
-    },
-    {
-      key: 'neo4j',
-      label: 'Neo4j',
-      status: systemStatus.neo4j || 'unknown',
-      color: systemStatus.neo4j === 'connected' ? 'safe-green' : 'warning-yellow'
-    },
-    {
-      key: 'redis',
-      label: 'Redis',
-      status: systemStatus.redis || 'unknown',
-      color: systemStatus.redis === 'connected' ? 'safe-green' : 'warning-yellow'
+      id: 'database',
+      label: 'DB',
+      icon: 'database',
+      status: serviceStatus.database?.status || 'checking',
+      detail: serviceStatus.database?.detail || 'Checking',
+      title: serviceStatus.database?.title || 'Database status'
     }
   ];
 
+  const mcpTone = toneForStatus(serviceStatus.mcp?.status || 'checking');
+
   return (
     <motion.header
-      initial={{ opacity: 0, y: -20 }}
+      initial={{ opacity: 0, y: -18 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`
-        relative bg-cyber-darker border-b border-cyber-border 
-        px-6 py-4 flex items-center justify-between
-        backdrop-blur-sm ${className}
-      `}
+      className={`rv-header relative z-[3000] overflow-visible px-5 py-2.5 flex items-center gap-2.5 ${className}`}
     >
-      {/* Left Section - Logo & Branding */}
-      <div className="flex items-center space-x-4">
-        {/* Logo */}
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="flex items-center space-x-3 cursor-pointer"
-          onClick={() => onMenuAction('home')}
-        >
-          <div className="w-10 h-10 bg-neon-green bg-opacity-20 rounded-lg flex items-center justify-center">
-            <img 
-              src="/reconvault.png" 
-              alt="ReconVault" 
-              className="w-8 h-8 filter brightness-110"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'block';
-              }}
-            />
-            <span 
-              className="text-neon-green text-lg font-cyber hidden"
-              style={{ display: 'none' }}
-            >
-              RV
-            </span>
-          </div>
-          <div>
-            <h1 className="text-xl font-cyber text-neon-green">
-              RECONVAULT
-            </h1>
-            <p className="text-xs text-cyber-gray font-mono">
-              Cyber Intelligence Platform
-            </p>
-          </div>
-        </motion.div>
+      <button
+        type="button"
+        onClick={() => onMenuAction('home')}
+        className="flex items-center gap-3 w-[240px] max-w-[24vw] text-left shrink-0"
+      >
+        <span className="w-10 h-10 rounded-lg border border-neon-green/30 bg-neon-green/10 flex items-center justify-center overflow-hidden shrink-0">
+          <img
+            src="/reconvault.png"
+            alt="ReconVault"
+            className="w-8 h-8 filter brightness-110"
+            onError={(event) => {
+              event.currentTarget.style.display = 'none';
+              event.currentTarget.nextElementSibling.style.display = 'block';
+            }}
+          />
+          <span className="hidden text-neon-green text-sm font-cyber">RV</span>
+        </span>
+        <span className="min-w-0">
+          <span className="block text-lg font-cyber text-neon-green leading-tight truncate">RECONVAULT</span>
+          <span className="block text-[10px] text-cyber-gray font-mono uppercase truncate">Cyber intelligence command</span>
+        </span>
+      </button>
 
-        {/* System Status Indicators */}
-        <div className="hidden lg:flex items-center space-x-3 ml-8">
-          {statusIndicators.map((indicator) => (
-            <div key={indicator.key} className="flex items-center space-x-2">
-              <StatusBadge
-                variant={indicator.color}
-                size="xs"
-              >
-                {indicator.status}
-              </StatusBadge>
-              <span className="text-xs text-cyber-gray font-mono">
-                {indicator.label}
+      <div className="hidden xl:flex items-center gap-2 shrink-0">
+        <div
+          title={backendConnected ? 'Backend health endpoint is reachable' : 'Backend health endpoint is not reachable'}
+          className="rv-panel-section h-10 px-2.5 flex items-center gap-2 min-w-[116px]"
+        >
+          <span className={`rv-status-dot ${backendConnected ? 'text-safe-green' : 'text-danger-red'}`} />
+          <span className="text-[10px] text-cyber-gray uppercase">Backend</span>
+          <span className={`text-[10px] uppercase ${backendConnected ? 'text-safe-green' : 'text-danger-red'}`}>
+            {backendConnected ? 'Live' : 'Offline'}
+          </span>
+        </div>
+
+        {serviceItems.map((item) => {
+          const tone = toneForStatus(item.status);
+          return (
+            <div
+              key={item.id}
+              title={item.title}
+              className="rv-panel-section h-10 px-2.5 flex items-center gap-2 min-w-[130px]"
+            >
+              <GlassIcon name={item.icon} size="xs" tone={tone} />
+              <span className="text-[10px] text-cyber-gray uppercase">{item.label}</span>
+              <span className={`rv-status-dot ${statusDotClass[tone] || statusDotClass.cyan}`} />
+              <span className={`max-w-[92px] truncate text-[10px] uppercase ${tone === 'green' ? 'text-safe-green' : tone === 'red' ? 'text-danger-red' : 'text-warning-yellow'}`}>
+                {item.detail}
               </span>
             </div>
-          ))}
-        </div>
+          );
+        })}
+
+        <button
+          type="button"
+          onClick={() => onMenuAction('mcp')}
+          title={serviceStatus.mcp?.title || 'Open MCP playground'}
+          className={`rv-command-button h-10 px-2.5 text-xs font-mono flex items-center gap-2 whitespace-nowrap ${activeView === 'mcp' ? 'is-active' : ''}`}
+        >
+          <GlassIcon name="mcp" size="xs" tone={activeView === 'mcp' ? 'green' : mcpTone} />
+          <span>MCP</span>
+          <span className={`rv-status-dot ${statusDotClass[mcpTone] || statusDotClass.cyan}`} />
+          <span className="text-[10px] text-cyber-gray">{serviceStatus.mcp?.detail || '0/0'}</span>
+        </button>
       </div>
 
-      {/* Center Section - Search */}
-      <div className="flex-1 max-w-2xl mx-8">
+      <div className="flex-1 min-w-[180px] max-w-xs">
         <form onSubmit={handleSearchSubmit} className="relative">
           <motion.div
             animate={{
-              scale: searchFocused ? 1.02 : 1,
-              boxShadow: searchFocused 
-                ? '0 0 20px rgba(0, 255, 65, 0.3)' 
-                : '0 0 0px rgba(0, 255, 65, 0)'
+              boxShadow: searchFocused ? '0 0 24px rgba(0, 217, 255, 0.22)' : '0 0 0 rgba(0, 0, 0, 0)'
             }}
             className="relative"
           >
             <input
               type="text"
               value={query}
-              onChange={handleSearchChange}
+              onChange={(event) => updateQuery(event.target.value)}
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
-              placeholder="Search entities, relationships, or run intelligence queries..."
-              className="
-                w-full px-4 py-3 pr-12 rounded-lg
-                bg-cyber-dark border border-cyber-border
-                text-neon-green placeholder-cyber-gray
-                font-mono text-sm
-                focus:border-neon-green focus:outline-none
-                transition-all duration-200
-              "
+              placeholder="Search entities, relationships, or intelligence notes..."
+              className="w-full pl-9 pr-11 py-2.5 rounded-lg bg-cyber-darker/80 border border-cyber-border text-neon-green placeholder-cyber-gray font-mono text-sm focus:border-neon-cyan focus:outline-none transition-all duration-200"
             />
-            
-            {/* Search Icon */}
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <span className="text-cyber-gray">
-                {searchFocused ? '🔍' : '🔎'}
-              </span>
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neon-cyan">
+              <GlassIcon name="search" size="xs" tone={searchFocused ? 'cyan' : 'muted'} bare />
             </div>
 
-            {/* Search Results Indicator */}
             {hasResults && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="absolute -bottom-2 -right-2 w-6 h-6 bg-neon-cyan rounded-full flex items-center justify-center"
+                className="absolute right-3 top-1/2 -translate-y-1/2 min-w-7 h-7 px-2 bg-neon-cyan text-cyber-black rounded-md flex items-center justify-center text-xs font-bold"
               >
-                <span className="text-xs font-bold text-cyber-black">
-                  {results.length > 99 ? '99+' : results.length}
-                </span>
+                {results.length > 99 ? '99+' : results.length}
               </motion.div>
             )}
           </motion.div>
 
-          {/* Quick Search Suggestions */}
           <AnimatePresence>
             {searchFocused && query.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="
-                  absolute top-full mt-2 w-full
-                  glass-panel-dark border border-cyber-border
-                  rounded-lg p-2 z-50 max-h-60 overflow-y-auto
-                "
+                exit={{ opacity: 0, y: -8 }}
+                className="absolute top-full mt-2 w-full glass-panel-dark p-2 z-[3200] max-h-60 overflow-y-auto"
               >
-                <div className="text-xs text-cyber-gray mb-2 font-mono">
-                  Quick searches:
-                </div>
-                <div className="space-y-1">
-                  {['malware', 'phishing', 'domain', 'email', 'threat actor'].map((suggestion) => (
+                <div className="text-[10px] text-cyber-gray mb-2 uppercase">Command suggestions</div>
+                <div className="grid grid-cols-2 gap-1">
+                  {['malware', 'phishing', 'domain', 'email', 'threat actor', 'infrastructure'].map((suggestion) => (
                     <button
                       key={suggestion}
                       type="button"
+                      onMouseDown={(event) => event.preventDefault()}
                       onClick={() => {
                         updateQuery(suggestion);
                         onSearch(suggestion);
                         search(suggestion);
                       }}
-                      className="
-                        w-full text-left px-3 py-2 text-sm font-mono
-                        text-cyber-gray hover:text-neon-green hover:bg-cyber-light
-                        rounded transition-colors
-                      "
+                      className="rv-command-button px-3 py-2 text-left text-xs font-mono"
                     >
                       {suggestion}
                     </button>
@@ -229,144 +210,70 @@ const TopHeader = ({
         </form>
       </div>
 
-      {/* Right Section - Controls & Status */}
-      <div className="flex items-center space-x-4">
-        {/* WebSocket Status */}
-        <div className="flex items-center space-x-2">
-          <ConnectionBadge connected={wsConnected} />
-          <span className="text-xs text-cyber-gray font-mono hidden lg:inline">
-            {wsConnected ? 'Real-time' : wsConnecting ? 'Connecting...' : 'Offline'}
-          </span>
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="rv-header-actions flex items-center gap-2">
+          {viewActions.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onMenuAction(item.action)}
+              title={item.label}
+              className={`rv-command-button h-10 px-3 text-xs font-mono flex items-center gap-2 whitespace-nowrap ${activeView === item.id || (activeView === 'graph' && item.id === 'graph') ? 'is-active' : ''}`}
+            >
+              <GlassIcon name={item.icon} size="xs" tone={activeView === item.id ? 'green' : 'cyan'} />
+              <span className="hidden xl:inline">{item.label}</span>
+            </button>
+          ))}
         </div>
 
-        {/* Advanced Filters Toggle */}
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={onAdvancedFiltersToggle}
-          className={`
-            px-3 py-2 rounded-lg border text-xs font-mono transition-all
-            ${showAdvancedFilters 
-              ? 'border-neon-cyan text-neon-cyan bg-neon-cyan bg-opacity-10' 
-              : 'border-cyber-border text-cyber-gray hover:text-neon-cyan hover:border-neon-cyan'
-            }
-          `}
-        >
-          🔧 Filters
-        </motion.button>
-
-        {/* Quick Actions */}
-        <div className="flex space-x-2">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onMenuAction('compliance')}
-            className="
-              px-3 py-2 rounded-lg border border-cyber-border
-              text-cyber-gray hover:text-neon-cyan hover:border-neon-cyan
-              text-xs font-mono transition-all
-            "
-          >
-            🛡️ Compliance
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onMenuAction('settings')}
-            className="
-              px-3 py-2 rounded-lg border border-cyber-border
-              text-cyber-gray hover:text-neon-green hover:border-neon-green
-              text-xs font-mono transition-all
-            "
-          >
-            ⚙️ Settings
-          </motion.button>
-        </div>
-
-        {/* User Menu */}
         <div className="relative">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="
-              w-10 h-10 rounded-lg border border-cyber-border
-              bg-cyber-light flex items-center justify-center
-              text-neon-green hover:text-neon-cyan hover:border-neon-cyan
-              transition-all
-            "
+          <button
+            type="button"
+            onClick={() => setShowUserMenu((value) => !value)}
+            className="rv-icon-button w-10 h-10 flex items-center justify-center"
           >
-            👤
-          </motion.button>
+            <GlassIcon name="user" size="sm" tone="green" />
+          </button>
 
-          {/* User Menu Dropdown */}
           <AnimatePresence>
             {showUserMenu && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: -10 }}
+                initial={{ opacity: 0, scale: 0.94, y: -8 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: -10 }}
-                className="
-                  absolute right-0 top-full mt-2 w-48
-                  glass-panel-dark border border-cyber-border
-                  rounded-lg p-2 z-50
-                "
+                exit={{ opacity: 0, scale: 0.94, y: -8 }}
+                className="absolute right-0 top-full mt-2 w-56 glass-panel-dark p-2 z-[3200]"
               >
-                <div className="space-y-1">
-                  {[
-                    { id: 'profile', label: '👤 Profile', action: () => onMenuAction('profile') },
-                    { id: 'preferences', label: '⚙️ Preferences', action: () => onMenuAction('preferences') },
-                    { id: 'help', label: '❓ Help & Docs', action: () => onMenuAction('help') },
-                    { id: 'about', label: 'ℹ️ About', action: () => onMenuAction('about') },
-                    { id: 'logout', label: '🚪 Logout', action: () => onMenuAction('logout') }
-                  ].map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        item.action();
-                        setShowUserMenu(false);
-                      }}
-                      className="
-                        w-full text-left px-3 py-2 text-sm font-mono
-                        text-cyber-gray hover:text-neon-green hover:bg-cyber-light
-                        rounded transition-colors
-                      "
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
+                {menuItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      item.action();
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full rv-command-button px-3 py-2 text-sm font-mono text-left flex items-center gap-2 mb-1 last:mb-0"
+                  >
+                    <GlassIcon name={item.icon} size="xs" tone="cyan" />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Close menu on outside click */}
-        <AnimatePresence>
-          {showUserMenu && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40"
-              onClick={() => setShowUserMenu(false)}
-            />
-          )}
-        </AnimatePresence>
       </div>
 
-      {/* Performance Monitor (Dev Mode) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="absolute bottom-0 left-0 right-0 bg-cyber-black bg-opacity-50 p-2">
-          <div className="flex justify-between text-xs font-mono text-cyber-gray">
-            <span>FPS: 60</span>
-            <span>Memory: 45.2MB</span>
-            <span>Nodes: 0</span>
-            <span>Edges: 0</span>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {showUserMenu && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[3100]"
+            onClick={() => setShowUserMenu(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.header>
   );
 };

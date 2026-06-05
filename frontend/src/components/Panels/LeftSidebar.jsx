@@ -1,9 +1,20 @@
-// Left Sidebar Component - Target input and controls
+// Left Sidebar Component - target collection controls and task context
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { COLLECTION_TYPES } from '../../utils/constants';
 import ReconSearchForm from '../Forms/ReconSearchForm';
 import FilterPanel from '../Forms/FilterPanel';
+import GlassIcon from '../Common/GlassIcon';
+
+const collectorIcon = {
+  web: 'globe',
+  social: 'user',
+  domain: 'network',
+  ip: 'link',
+  email: 'email',
+  media: 'media',
+  darkweb: 'darkweb'
+};
 
 const LeftSidebar = ({
   isCollapsed = false,
@@ -25,10 +36,10 @@ const LeftSidebar = ({
   }, [activeTab]);
 
   const tabs = [
-    { id: 'search', label: 'Search', icon: '🔍' },
-    { id: 'filters', label: 'Filters', icon: '🔧' },
-    { id: 'history', label: 'History', icon: '📋' },
-    { id: 'tasks', label: 'Tasks', icon: '⚙️' }
+    { id: 'search', label: 'Search', icon: 'search' },
+    { id: 'filters', label: 'Filters', icon: 'filter' },
+    { id: 'history', label: 'History', icon: 'history' },
+    { id: 'tasks', label: 'Tasks', icon: 'queue' }
   ];
 
   const handleTabChange = (tabId) => {
@@ -37,176 +48,141 @@ const LeftSidebar = ({
   };
 
   const sidebarVariants = {
-    expanded: { width: 320 },
-    collapsed: { width: 60 }
+    expanded: { width: 332 },
+    collapsed: { width: 64 }
   };
 
   const contentVariants = {
     expanded: { opacity: 1, x: 0 },
-    collapsed: { opacity: 0, x: -20 }
+    collapsed: { opacity: 0, x: -18 }
   };
 
+  const runningCount = activeTasks.filter((task) => task.status === 'RUNNING').length;
+  const completedCount = collectionHistory.filter((task) => task.status === 'COMPLETED').length;
+
   return (
-    <motion.div
+    <motion.aside
       variants={sidebarVariants}
       animate={isCollapsed ? 'collapsed' : 'expanded'}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={`
-        relative bg-cyber-dark border-r border-cyber-border h-full
-        flex flex-col overflow-hidden ${className}
-      `}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      className={`rv-side-panel relative border-r h-full flex flex-col flex-shrink-0 overflow-hidden ${className}`}
     >
-      {/* Collapse Toggle */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+      <button
+        type="button"
         onClick={onToggleCollapse}
-        className="
-          absolute -right-3 top-6 w-6 h-12 bg-cyber-dark border border-cyber-border
-          rounded-r-lg flex items-center justify-center text-neon-green
-          hover:text-neon-cyan transition-colors z-10
-        "
+        className="rv-icon-button absolute -right-3 top-6 w-7 h-12 flex items-center justify-center text-neon-green hover:text-neon-cyan z-20"
+        title={isCollapsed ? 'Expand controls' : 'Collapse controls'}
       >
-        <span className="text-sm">
-          {isCollapsed ? '▶️' : '◀️'}
-        </span>
-      </motion.button>
+        <GlassIcon name={isCollapsed ? 'collapse-right' : 'collapse-left'} size="xs" tone="cyan" bare />
+      </button>
 
-      {/* Header */}
-      <div className="p-4 border-b border-cyber-border">
+      <div className="p-4 border-b rv-soft-divider">
         <motion.div
           variants={contentVariants}
           animate={isCollapsed ? 'collapsed' : 'expanded'}
-          className="flex items-center space-x-3"
+          className="flex items-center gap-3"
         >
           {!isCollapsed && (
             <>
-              <div className="w-8 h-8 bg-neon-green bg-opacity-20 rounded-lg flex items-center justify-center">
-                <span className="text-neon-green">🎯</span>
-              </div>
-              <div>
-                <h2 className="text-lg font-cyber text-neon-green">Recon Controls</h2>
-                <p className="text-xs text-cyber-gray">Collection & Search</p>
+              <GlassIcon name="target" size="lg" tone="green" />
+              <div className="min-w-0">
+                <h2 className="text-lg font-cyber text-neon-green leading-tight">Recon Controls</h2>
+                <p className="text-xs text-cyber-gray uppercase">Collection and filtering</p>
               </div>
             </>
           )}
         </motion.div>
       </div>
 
-      {/* Tabs */}
       {!isCollapsed && (
-        <div className="flex border-b border-cyber-border">
+        <div className="grid grid-cols-4 gap-1 p-2 border-b rv-soft-divider">
           {tabs.map((tab) => (
-            <motion.button
+            <button
               key={tab.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              type="button"
               onClick={() => handleTabChange(tab.id)}
-              className={`
-                flex-1 px-3 py-3 text-xs font-mono transition-colors relative
-                ${currentTab === tab.id 
-                  ? 'text-neon-green bg-cyber-light' 
-                  : 'text-cyber-gray hover:text-neon-green'
-                }
-              `}
+              className={`rv-tab-button relative px-2 py-2 text-xs font-mono flex flex-col items-center gap-1 ${currentTab === tab.id ? 'is-active' : ''}`}
             >
-              <div className="flex flex-col items-center space-y-1">
-                <span className="text-sm">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </div>
-              
-              {/* Active indicator */}
+              <GlassIcon name={tab.icon} size="xs" tone={currentTab === tab.id ? 'green' : 'cyan'} />
+              <span>{tab.label}</span>
               {currentTab === tab.id && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-neon-green"
+                <motion.span
+                  layoutId="leftActiveTab"
+                  className="absolute bottom-0 left-2 right-2 h-0.5 bg-neon-green"
                 />
               )}
-            </motion.button>
+            </button>
           ))}
         </div>
       )}
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto scrollable-cyber">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentTab}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.2 }}
             className="p-4 h-full"
           >
-            {/* Search Tab */}
             {currentTab === 'search' && (
               <div className="space-y-4">
                 <ReconSearchForm onStartCollection={onStartCollection} />
-                
-                {/* Quick Collection Types */}
-                <div>
-                  <h3 className="text-sm font-medium text-neon-green mb-2">Quick Collection</h3>
+
+                <div className="rv-panel-section p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-neon-green">Collector Matrix</h3>
+                    <span className="text-[10px] text-cyber-gray uppercase">{COLLECTION_TYPES.length} sources</span>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {COLLECTION_TYPES.slice(0, 4).map((type) => (
-                      <motion.button
-                        key={type}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => onStartCollection({
-                          target: '',
-                          types: [type],
-                          options: {}
-                        })}
-                        className="
-                          px-3 py-2 text-xs font-mono rounded border border-cyber-border
-                          bg-cyber-light text-cyber-gray hover:text-neon-green hover:border-neon-green
-                          transition-colors
-                        "
-                      >
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </motion.button>
+                    {COLLECTION_TYPES.map((type) => (
+                      <div key={type} className="rv-command-button px-3 py-2 flex items-center gap-2">
+                        <GlassIcon name={collectorIcon[type] || 'source'} size="xs" tone="cyan" />
+                        <span className="text-xs font-mono capitalize text-cyber-gray">{type}</span>
+                      </div>
                     ))}
                   </div>
+                  <p className="mt-3 text-[11px] leading-relaxed text-cyber-gray">
+                    Select collectors above with a target. Empty-target quick starts were removed to prevent invalid backend tasks.
+                  </p>
                 </div>
               </div>
             )}
 
-            {/* Filters Tab */}
-            {currentTab === 'filters' && (
-              <FilterPanel />
-            )}
+            {currentTab === 'filters' && <FilterPanel />}
 
-            {/* History Tab */}
             {currentTab === 'history' && (
               <div className="space-y-3">
-                <h3 className="text-sm font-medium text-neon-green">Collection History</h3>
-                
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-neon-green">Collection History</h3>
+                  <span className="text-xs text-cyber-gray">{collectionHistory.length} records</span>
+                </div>
+
                 {collectionHistory.length === 0 ? (
-                  <div className="text-center py-8 text-cyber-gray">
-                    <span className="text-2xl block mb-2">📋</span>
+                  <div className="rv-panel-section text-center py-8 text-cyber-gray">
+                    <div className="flex justify-center mb-2">
+                      <GlassIcon name="history" size="lg" tone="muted" />
+                    </div>
                     <p className="text-sm">No collection history</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {collectionHistory.slice(0, 10).map((item, index) => (
+                    {collectionHistory.slice(0, 12).map((item) => (
                       <motion.div
-                        key={index}
-                        whileHover={{ scale: 1.02 }}
-                        className="
-                          p-3 rounded border border-cyber-border bg-cyber-light
-                          hover:border-neon-green transition-colors cursor-pointer
-                        "
+                        key={item.id || `${item.target}-${item.timestamp}`}
+                        whileHover={{ y: -1 }}
+                        className="rv-panel-section p-3 hover:border-neon-green/40 transition-colors cursor-pointer"
                       >
-                        <div className="flex justify-between items-start mb-1">
-                          <span className="text-xs font-mono text-neon-green truncate">
-                            {item.target}
-                          </span>
-                          <span className="text-xs text-cyber-gray">
-                            {item.types.join(', ')}
-                          </span>
+                        <div className="flex justify-between items-start gap-3 mb-1">
+                          <span className="text-xs font-mono text-neon-green truncate">{item.target || 'Unknown target'}</span>
+                          <span className="text-[10px] text-cyber-gray uppercase">{item.status}</span>
                         </div>
-                        <div className="text-xs text-cyber-gray">
-                          {new Date(item.timestamp).toLocaleString()}
+                        <div className="text-[11px] text-neon-cyan truncate">
+                          {(item.types || []).join(', ') || item.type || 'collection'}
+                        </div>
+                        <div className="text-[10px] text-cyber-gray mt-1">
+                          {item.timestamp ? new Date(item.timestamp).toLocaleString() : 'No timestamp'}
                         </div>
                       </motion.div>
                     ))}
@@ -215,19 +191,18 @@ const LeftSidebar = ({
               </div>
             )}
 
-            {/* Tasks Tab */}
             {currentTab === 'tasks' && (
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <h3 className="text-sm font-medium text-neon-green">Active Tasks</h3>
-                  <span className="text-xs text-cyber-gray">
-                    {activeTasks.length} running
-                  </span>
+                  <span className="text-xs text-cyber-gray">{activeTasks.length} running</span>
                 </div>
-                
+
                 {activeTasks.length === 0 ? (
-                  <div className="text-center py-8 text-cyber-gray">
-                    <span className="text-2xl block mb-2">⚙️</span>
+                  <div className="rv-panel-section text-center py-8 text-cyber-gray">
+                    <div className="flex justify-center mb-2">
+                      <GlassIcon name="queue" size="lg" tone="muted" />
+                    </div>
                     <p className="text-sm">No active tasks</p>
                   </div>
                 ) : (
@@ -235,50 +210,31 @@ const LeftSidebar = ({
                     {activeTasks.map((task) => (
                       <motion.div
                         key={task.id}
-                        whileHover={{ scale: 1.02 }}
-                        className="
-                          p-3 rounded border border-cyber-border bg-cyber-light
-                          hover:border-neon-cyan transition-colors
-                        "
+                        whileHover={{ y: -1 }}
+                        className="rv-panel-section p-3 hover:border-neon-cyan/40 transition-colors"
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-xs font-mono text-neon-cyan truncate">
-                            {task.target}
-                          </span>
-                          <div className="flex space-x-1">
+                        <div className="flex justify-between items-start gap-3 mb-2">
+                          <span className="text-xs font-mono text-neon-cyan truncate">{task.target || 'Unknown target'}</span>
+                          <div className="flex gap-1">
                             {task.status === 'RUNNING' ? (
-                              <button
-                                onClick={() => onPauseTask(task.id)}
-                                className="text-xs text-warning-yellow hover:text-warning-yellow"
-                              >
-                                ⏸️
+                              <button type="button" onClick={() => onPauseTask(task.id)} className="rv-icon-button w-7 h-7 flex items-center justify-center text-warning-yellow">
+                                <GlassIcon name="pause" size="xs" tone="yellow" bare />
                               </button>
                             ) : (
-                              <button
-                                onClick={() => onResumeTask(task.id)}
-                                className="text-xs text-safe-green hover:text-safe-green"
-                              >
-                                ▶️
+                              <button type="button" onClick={() => onResumeTask(task.id)} className="rv-icon-button w-7 h-7 flex items-center justify-center text-safe-green">
+                                <GlassIcon name="play" size="xs" tone="green" bare />
                               </button>
                             )}
-                            <button
-                              onClick={() => onCancelTask(task.id)}
-                              className="text-xs text-danger-red hover:text-danger-red"
-                            >
-                              ❌
+                            <button type="button" onClick={() => onCancelTask(task.id)} className="rv-icon-button w-7 h-7 flex items-center justify-center text-danger-red">
+                              <GlassIcon name="close" size="xs" tone="red" bare />
                             </button>
                           </div>
                         </div>
-                        
-                        {/* Progress Bar */}
+
                         <div className="mb-2">
                           <div className="flex justify-between text-xs mb-1">
-                            <span className="text-cyber-gray">
-                              {task.completed}/{task.total}
-                            </span>
-                            <span className="text-neon-green">
-                              {Math.round(task.progress)}%
-                            </span>
+                            <span className="text-cyber-gray">{task.completed}/{task.total}</span>
+                            <span className="text-neon-green">{Math.round(task.progress)}%</span>
                           </div>
                           <div className="progress-cyber">
                             <motion.div
@@ -289,9 +245,9 @@ const LeftSidebar = ({
                             />
                           </div>
                         </div>
-                        
-                        <div className="text-xs text-cyber-gray">
-                          {task.status} • {task.type}
+
+                        <div className="text-[10px] text-cyber-gray uppercase">
+                          {task.status} / {task.type}
                         </div>
                       </motion.div>
                     ))}
@@ -303,28 +259,25 @@ const LeftSidebar = ({
         </AnimatePresence>
       </div>
 
-      {/* Status Footer */}
       {!isCollapsed && (
-        <div className="p-4 border-t border-cyber-border">
-          <motion.div
-            variants={contentVariants}
-            animate={isCollapsed ? 'collapsed' : 'expanded'}
-            className="text-xs text-cyber-gray space-y-1"
-          >
+        <div className="p-4 border-t rv-soft-divider">
+          <div className="text-xs text-cyber-gray space-y-2">
             <div className="flex justify-between">
-              <span>Collection Queue:</span>
-              <span className="text-neon-green">
-                {activeTasks.filter(t => t.status === 'RUNNING').length} active
-              </span>
+              <span>Collection Queue</span>
+              <span className="text-neon-green">{runningCount} active</span>
             </div>
             <div className="flex justify-between">
-              <span>Success Rate:</span>
-              <span className="text-safe-green">94.2%</span>
+              <span>Completed Runs</span>
+              <span className="text-safe-green">{completedCount}</span>
             </div>
-          </motion.div>
+            <div className="flex justify-between">
+              <span>Collector Sources</span>
+              <span className="text-neon-cyan">{COLLECTION_TYPES.length}</span>
+            </div>
+          </div>
         </div>
       )}
-    </motion.div>
+    </motion.aside>
   );
 };
 

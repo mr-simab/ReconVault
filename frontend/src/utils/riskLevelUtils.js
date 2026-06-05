@@ -276,9 +276,7 @@ export const generateRiskTimeline = (entity, days = 30) => {
     const date = new Date();
     date.setDate(date.getDate() - i);
     
-    // Simulate some variation in risk over time
-    const variation = (Math.random() - 0.5) * 0.2; // ±0.1 variation
-    const score = Math.max(0, Math.min(1, baseScore + variation));
+    const score = Math.max(0, Math.min(1, baseScore));
     
     timeline.push({
       date: date.toISOString().split('T')[0],

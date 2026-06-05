@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { reportsAPI } from '../../services/api';
+import GlassIcon from '../Common/GlassIcon';
 
 const ExportPanel = ({ onExport = () => {}, className = '' }) => {
   const [selectedFormat, setSelectedFormat] = useState('json');
@@ -102,12 +103,12 @@ const ExportPanel = ({ onExport = () => {}, className = '' }) => {
   };
 
   const formatIcons = {
-    json: '📄',
-    csv: '📊',
-    html: '🌐',
-    pdf: '📑',
-    graphml: '🕸️',
-    gexf: '🔷'
+    json: 'document',
+    csv: 'density',
+    html: 'globe',
+    pdf: 'docs',
+    graphml: 'graph',
+    gexf: 'relationship'
   };
 
   const templateDescriptions = {
@@ -147,12 +148,12 @@ const ExportPanel = ({ onExport = () => {}, className = '' }) => {
               `}
             >
               <div className="flex items-center space-x-2 mb-1">
-                <span className="text-lg">{formatIcons[format.id] || '📄'}</span>
+                <GlassIcon name={formatIcons[format.id] || 'document'} size="xs" tone="cyan" />
                 <span className="font-mono text-sm font-medium capitalize">
                   {format.id}
                 </span>
                 {selectedFormat === format.id && (
-                  <span className="text-xs">✓</span>
+                  <GlassIcon name="check" size="xs" tone="green" bare />
                 )}
               </div>
               <p className="text-xs opacity-75 truncate">
@@ -195,7 +196,7 @@ const ExportPanel = ({ onExport = () => {}, className = '' }) => {
                   </p>
                 </div>
                 {selectedTemplate === template.id && (
-                  <span className="text-lg">✓</span>
+                  <GlassIcon name="check" size="sm" tone="green" />
                 )}
               </div>
             </motion.button>
@@ -210,9 +211,9 @@ const ExportPanel = ({ onExport = () => {}, className = '' }) => {
         </label>
         <div className="space-y-2">
           {[
-            { key: 'include_entities', label: 'Include Entities', icon: '👥' },
-            { key: 'include_relationships', label: 'Include Relationships', icon: '🔗' },
-            { key: 'include_risk_analysis', label: 'Include Risk Analysis', icon: '⚠️' }
+            { key: 'include_entities', label: 'Include Entities', icon: 'nodes' },
+            { key: 'include_relationships', label: 'Include Relationships', icon: 'relationship' },
+            { key: 'include_risk_analysis', label: 'Include Risk Analysis', icon: 'risk' }
           ].map((option) => (
             <motion.label
               key={option.key}
@@ -237,7 +238,7 @@ const ExportPanel = ({ onExport = () => {}, className = '' }) => {
                   focus:ring-neon-cyan focus:ring-2
                 "
               />
-              <span className="text-lg">{option.icon}</span>
+              <GlassIcon name={option.icon} size="xs" tone="cyan" />
               <span className="text-sm text-cyber-gray">{option.label}</span>
             </motion.label>
           ))}
@@ -299,7 +300,7 @@ const ExportPanel = ({ onExport = () => {}, className = '' }) => {
           "
         >
           <span className="flex items-center justify-center space-x-2">
-            <span>👁️</span>
+            <GlassIcon name="eye" size="xs" tone="cyan" />
             <span>Preview Report</span>
           </span>
         </motion.button>
@@ -323,7 +324,7 @@ const ExportPanel = ({ onExport = () => {}, className = '' }) => {
             </>
           ) : (
             <>
-              <span>📥</span>
+              <GlassIcon name="download" size="xs" tone="green" />
               <span>Generate & Export Report</span>
             </>
           )}

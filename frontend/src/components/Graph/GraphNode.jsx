@@ -61,11 +61,12 @@ const GraphNode = ({
 
   // Draw entity type icon (simplified for canvas)
   if (size > 12) {
+    const glyph = String(entityConfig.icon || '?');
     ctx.fillStyle = nodeColor;
-    ctx.font = `${size * 0.8}px Arial`;
+    ctx.font = `${glyph.length > 2 ? size * 0.42 : size * 0.56}px "Share Tech Mono", Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(entityConfig.icon, node.x, node.y);
+    ctx.fillText(glyph, node.x, node.y);
   }
 
   // Draw selection ring
@@ -90,30 +91,34 @@ const GraphNode = ({
     ctx.setLineDash([]);
   }
 
-  // Draw label if enabled and scale is sufficient
-  if (showLabels && globalScale > 0.8 && node.val) {
-    const label = node.val || node.name || node.id;
-    const fontSize = Math.max(8, 12 / globalScale);
+  // Draw contextual labels without carpeting dense graphs.
+  const rawLabel = node.label || node.value || node.val || node.name || node.id;
+  const shouldDrawLabel = showLabels && rawLabel && (isSelected || isHovered || isHighlighted || globalScale > 1.35);
+
+  if (shouldDrawLabel) {
+    const label = rawLabel.length > 28 ? `${rawLabel.slice(0, 25)}...` : rawLabel;
+    const fontSize = Math.max(8, Math.min(11, 11 / globalScale));
+    const labelY = node.y + size + fontSize + 4;
     
     // Background for better readability
+    ctx.font = `${fontSize}px "Share Tech Mono", monospace`;
     const textMetrics = ctx.measureText(label);
     const textWidth = textMetrics.width;
-    const padding = 2;
+    const padding = 4;
     
     ctx.fillStyle = 'rgba(10, 14, 39, 0.8)';
     ctx.fillRect(
       node.x - textWidth / 2 - padding,
-      node.y + size + 2 - fontSize / 2,
+      labelY - fontSize / 2 - padding / 2,
       textWidth + padding * 2,
       fontSize + padding
     );
     
     // Draw label text
     ctx.fillStyle = '#00ff41';
-    ctx.font = `${fontSize}px "Share Tech Mono", monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(label, node.x, node.y + size + 2);
+    ctx.fillText(label, node.x, labelY);
   }
 
   // Draw risk level indicator

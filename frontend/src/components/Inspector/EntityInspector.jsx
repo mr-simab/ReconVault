@@ -9,6 +9,7 @@ import {
   formatSourceName,
   formatJSON 
 } from '../../utils/formatters';
+import GlassIcon from '../Common/GlassIcon';
 
 const EntityInspector = ({
   entity,
@@ -40,6 +41,18 @@ const EntityInspector = ({
     onAction('delete', entity);
   };
 
+  const getRiskIcon = (severity) => {
+    switch (severity) {
+      case 'critical':
+      case 'high':
+        return 'alert';
+      case 'medium':
+        return 'risk';
+      default:
+        return 'info';
+    }
+  };
+
   const renderOverview = () => (
     <div className="space-y-4">
       {/* Entity Header */}
@@ -54,11 +67,12 @@ const EntityInspector = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleCopy(entity.id, 'id')}
-              className="px-3 py-1 text-xs font-mono rounded border border-cyber-border
+              className="px-3 py-1 text-xs font-mono rounded border border-cyber-border flex items-center gap-1
                        bg-cyber-dark text-cyber-gray hover:text-neon-cyan hover:border-neon-cyan
                        transition-colors"
             >
-              {copiedField === 'id' ? '✓ Copied' : '📋 Copy ID'}
+              <GlassIcon name={copiedField === 'id' ? 'check' : 'copy'} size="xs" bare />
+              <span>{copiedField === 'id' ? 'Copied' : 'Copy ID'}</span>
             </motion.button>
           </div>
         </div>
@@ -79,9 +93,10 @@ const EntityInspector = ({
             <motion.button
               whileHover={{ scale: 1.02 }}
               onClick={() => handleCopy(entity.value, 'value')}
-              className="mt-1 text-xs text-cyber-gray hover:text-neon-cyan transition-colors"
+              className="mt-1 text-xs text-cyber-gray hover:text-neon-cyan transition-colors inline-flex items-center gap-1"
             >
-              {copiedField === 'value' ? '✓ Copied' : '📋 Copy Value'}
+              <GlassIcon name={copiedField === 'value' ? 'check' : 'copy'} size="xs" bare />
+              <span>{copiedField === 'value' ? 'Copied' : 'Copy Value'}</span>
             </motion.button>
           </div>
         </div>
@@ -171,11 +186,12 @@ const EntityInspector = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => handleCopy(formatJSON(entity.metadata), 'metadata')}
-          className="px-3 py-1 text-xs font-mono rounded border border-cyber-border
+          className="px-3 py-1 text-xs font-mono rounded border border-cyber-border flex items-center gap-1
                    bg-cyber-dark text-cyber-gray hover:text-neon-cyan hover:border-neon-cyan
                    transition-colors"
         >
-          {copiedField === 'metadata' ? '✓ Copied' : '📋 Copy JSON'}
+          <GlassIcon name={copiedField === 'metadata' ? 'check' : 'copy'} size="xs" bare />
+          <span>{copiedField === 'metadata' ? 'Copied' : 'Copy JSON'}</span>
         </motion.button>
       </div>
       
@@ -245,7 +261,9 @@ const EntityInspector = ({
         </div>
       ) : (
         <div className="text-center py-8 text-cyber-gray">
-          <span className="text-2xl block mb-2">🔗</span>
+          <div className="flex justify-center mb-2">
+            <GlassIcon name="relationship" size="lg" tone="muted" />
+          </div>
           <p className="text-sm">No connections found</p>
         </div>
       )}
@@ -287,11 +305,7 @@ const EntityInspector = ({
             {entity.riskFactors.map((factor, index) => (
               <div key={index} className="p-3 bg-cyber-light bg-opacity-30 rounded border border-cyber-border">
                 <div className="flex items-center space-x-2 mb-1">
-                  <span className="text-xs">
-                    {factor.severity === 'critical' ? '🚨' :
-                     factor.severity === 'high' ? '⚠️' :
-                     factor.severity === 'medium' ? '⚡' : 'ℹ️'}
-                  </span>
+                  <GlassIcon name={getRiskIcon(factor.severity)} size="xs" tone={factor.severity === 'critical' || factor.severity === 'high' ? 'red' : factor.severity === 'medium' ? 'yellow' : 'cyan'} />
                   <span className="text-xs font-medium text-neon-cyan">
                     {factor.type || 'General'}
                   </span>
@@ -363,27 +377,12 @@ const EntityInspector = ({
             </div>
           </div>
         )}
-        
-        {/* Mock history entries */}
-        {[
-          { action: 'Risk assessment updated', date: entity.updated_at, type: 'update' },
-          { action: 'New connections discovered', date: entity.updated_at, type: 'connection' },
-          { action: 'Source verification', date: entity.created_at, type: 'verify' }
-        ].map((entry, index) => (
-          <div key={index} className="flex items-center space-x-3 p-3 bg-cyber-light bg-opacity-30 rounded border border-cyber-border">
-            <div className={`w-3 h-3 rounded-full ${
-              entry.type === 'update' ? 'bg-neon-cyan' :
-              entry.type === 'connection' ? 'bg-neon-purple' :
-              'bg-warning-yellow'
-            }`}></div>
-            <div className="flex-1">
-              <div className="text-xs font-mono text-neon-green">{entry.action}</div>
-              <div className="text-xs text-cyber-gray">
-                {formatDate(entry.date, 'relative')}
-              </div>
-            </div>
+        <div className="flex items-center space-x-3 p-3 bg-cyber-light bg-opacity-30 rounded border border-cyber-border">
+          <GlassIcon name="clock" size="sm" tone="muted" />
+          <div className="flex-1">
+            <div className="text-xs font-mono text-cyber-gray">No additional timeline events recorded</div>
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );

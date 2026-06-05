@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDate } from '../../utils/formatters';
+import GlassIcon from './GlassIcon';
 
 const Toast = ({ 
   message, 
@@ -14,35 +15,35 @@ const Toast = ({
 }) => {
   const toastTypes = {
     success: {
-      icon: '✅',
+      icon: 'check',
       bgColor: 'bg-safe-green',
       textColor: 'text-cyber-black',
       borderColor: 'border-safe-green',
       glowColor: 'shadow-glow-green'
     },
     error: {
-      icon: '❌',
+      icon: 'close',
       bgColor: 'bg-danger-red',
       textColor: 'text-white',
       borderColor: 'border-danger-red',
       glowColor: 'shadow-glow-red'
     },
     warning: {
-      icon: '⚠️',
+      icon: 'alert',
       bgColor: 'bg-warning-yellow',
       textColor: 'text-cyber-black',
       borderColor: 'border-warning-yellow',
       glowColor: 'shadow-glow-yellow'
     },
     info: {
-      icon: 'ℹ️',
+      icon: 'info',
       bgColor: 'bg-neon-cyan',
       textColor: 'text-cyber-black',
       borderColor: 'border-neon-cyan',
       glowColor: 'shadow-glow-cyan'
     },
     loading: {
-      icon: '⏳',
+      icon: 'clock',
       bgColor: 'bg-cyber-light',
       textColor: 'text-neon-green',
       borderColor: 'border-neon-green',
@@ -98,7 +99,7 @@ const Toast = ({
               transition={{ delay: 0.1 }}
               className="text-lg"
             >
-              {currentType.icon}
+              <GlassIcon name={currentType.icon} size="sm" bare />
             </motion.span>
           </div>
 
@@ -128,7 +129,7 @@ const Toast = ({
                   className="flex-shrink-0 ml-2 p-1 rounded-full hover:bg-black hover:bg-opacity-20 transition-colors"
                 >
                   <span className="sr-only">Close</span>
-                  ✕
+                  <GlassIcon name="close" size="xs" bare />
                 </motion.button>
               )}
             </div>

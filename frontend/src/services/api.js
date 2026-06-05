@@ -78,7 +78,6 @@ apiClient.interceptors.response.use(
     
     // Don't log aborted requests
     if (error.name === 'CanceledError') {
-      console.log('[API] Request cancelled (duplicate)');
       return Promise.reject(error);
     }
     
@@ -329,6 +328,18 @@ export const collectionAPI = {
 
 // Reports API methods
 export const reportsAPI = {
+  // Get full investigation report
+  getInvestigationReport: async (id) => {
+    const response = await apiClient.get(`/reports/investigation/${id}`);
+    return response.data;
+  },
+
+  // Export investigation report
+  exportInvestigationReport: async (id, format = 'json') => {
+    const response = await apiClient.get(`/reports/investigation/${id}/export?format=${format}`);
+    return response.data;
+  },
+
   // Generate report
   generateReport: async (format, template, options = {}) => {
     const params = new URLSearchParams({
@@ -395,18 +406,6 @@ export const healthAPI = {
   // Get database status
   getDatabaseStatus: async () => {
     const response = await apiClient.get('/health/database');
-    return response.data;
-  },
-
-  // Get Neo4j status
-  getNeo4jStatus: async () => {
-    const response = await apiClient.get('/health/neo4j');
-    return response.data;
-  },
-
-  // Get Redis status
-  getRedisStatus: async () => {
-    const response = await apiClient.get('/health/redis');
     return response.data;
   }
 };
@@ -542,6 +541,12 @@ export const complianceAPI = {
   getRateLimitStatus: async () => {
     const response = await apiClient.get('/compliance/rate-limits');
     return response.data;
+  },
+
+  // Resolve a compliance violation
+  resolveComplianceViolation: async (id, notes = 'Resolved by operator') => {
+    const response = await apiClient.delete(`/compliance/violations/${id}`, { data: { notes } });
+    return response.data;
   }
 };
 
@@ -585,6 +590,256 @@ export const anomaliesAPI = {
   // Analyze for anomalies
   analyzeAnomalies: async (options = {}) => {
     const response = await apiClient.post('/ai/analyze', options);
+    return response.data;
+  }
+};
+
+// ReconVault v2 orchestration API methods
+export const toolsAPI = {
+  listTools: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`/tools?${params}`);
+    return response.data;
+  },
+
+  getToolContext: async () => {
+    const response = await apiClient.get('/tools/context');
+    return response.data;
+  },
+
+  getTool: async (name) => {
+    const response = await apiClient.get(`/tools/${name}`);
+    return response.data;
+  }
+};
+
+export const mcpAPI = {
+  listServers: async () => {
+    const response = await apiClient.get('/mcp/servers');
+    return response.data;
+  },
+
+  getCapabilities: async () => {
+    const response = await apiClient.get('/mcp/capabilities');
+    return response.data;
+  }
+};
+
+export const aiPlanningAPI = {
+  getProviderStatus: async () => {
+    const response = await apiClient.get('/ai/providers');
+    return response.data;
+  },
+
+  createPlan: async (payload) => {
+    const response = await apiClient.post('/ai/plan', payload);
+    return response.data;
+  },
+
+  analyze: async (payload) => {
+    const response = await apiClient.post('/ai/analyze', payload);
+    return response.data;
+  }
+};
+
+export const investigationAPI = {
+  createInvestigation: async (payload) => {
+    const response = await apiClient.post('/investigations', payload);
+    return response.data;
+  },
+
+  listInvestigations: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`/investigations?${params}`);
+    return response.data;
+  },
+
+  getInvestigation: async (id) => {
+    const response = await apiClient.get(`/investigations/${id}`);
+    return response.data;
+  },
+
+  createPlan: async (id, payload = {}) => {
+    const response = await apiClient.post(`/investigations/${id}/plan`, payload);
+    return response.data;
+  },
+
+  executePlan: async (id, payload = {}) => {
+    const response = await apiClient.post(`/investigations/${id}/execute`, payload);
+    return response.data;
+  },
+
+  analyzeInvestigation: async (id, payload = {}) => {
+    const response = await apiClient.post(`/investigations/${id}/analyze`, payload);
+    return response.data;
+  },
+
+  listPlans: async (id) => {
+    const response = await apiClient.get(`/investigations/${id}/plans`);
+    return response.data;
+  },
+
+  listEvidence: async (id, limit = 100) => {
+    const response = await apiClient.get(`/investigations/${id}/evidence?limit=${limit}`);
+    return response.data;
+  },
+
+  listExecutions: async (id, limit = 100) => {
+    const response = await apiClient.get(`/investigations/${id}/executions?limit=${limit}`);
+    return response.data;
+  },
+
+  appendMemory: async (id, payload) => {
+    const response = await apiClient.post(`/investigations/${id}/memory`, payload);
+    return response.data;
+  }
+};
+
+export const executionAPI = {
+  validatePlan: async (plan) => {
+    const response = await apiClient.post('/execute/validate', { plan });
+    return response.data;
+  },
+
+  executePlan: async (payload) => {
+    const response = await apiClient.post('/execute', payload);
+    return response.data;
+  }
+};
+
+export const evidenceAPI = {
+  listEvidence: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`/evidence?${params}`);
+    return response.data;
+  },
+
+  getEvidence: async (id) => {
+    const response = await apiClient.get(`/evidence/${id}`);
+    return response.data;
+  }
+};
+
+export const workflowAPI = {
+  runInvestigation: async (payload) => {
+    const response = await apiClient.post('/workflows/investigation', payload);
+    return response.data;
+  }
+};
+
+export const caseAPI = {
+  listCases: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`/cases?${params}`);
+    return response.data;
+  },
+
+  createCase: async (payload) => {
+    const response = await apiClient.post('/cases', payload);
+    return response.data;
+  },
+
+  getCase: async (id) => {
+    const response = await apiClient.get(`/cases/${id}`);
+    return response.data;
+  },
+
+  updateCase: async (id, payload) => {
+    const response = await apiClient.put(`/cases/${id}`, payload);
+    return response.data;
+  },
+
+  deleteCase: async (id) => {
+    const response = await apiClient.delete(`/cases/${id}`);
+    return response.data;
+  },
+
+  addInvestigation: async (id, investigationId) => {
+    const response = await apiClient.post(`/cases/${id}/investigations`, { investigationId });
+    return response.data;
+  }
+};
+
+export const timelineAPI = {
+  listTimeline: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`/timeline?${params}`);
+    return response.data;
+  },
+
+  listInvestigationTimeline: async (id) => {
+    const response = await apiClient.get(`/timeline/investigation/${id}`);
+    return response.data;
+  },
+
+  listCaseTimeline: async (id) => {
+    const response = await apiClient.get(`/timeline/case/${id}`);
+    return response.data;
+  }
+};
+
+export const iocAPI = {
+  listIocs: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`/iocs?${params}`);
+    return response.data;
+  },
+
+  createIoc: async (payload) => {
+    const response = await apiClient.post('/iocs', payload);
+    return response.data;
+  },
+
+  getIoc: async (id) => {
+    const response = await apiClient.get(`/iocs/${id}`);
+    return response.data;
+  },
+
+  searchIocs: async (payload) => {
+    const response = await apiClient.post('/iocs/search', payload);
+    return response.data;
+  },
+
+  mergeIocs: async (payload) => {
+    const response = await apiClient.post('/iocs/merge', payload);
+    return response.data;
+  }
+};
+
+export const auditAPI = {
+  listAuditLogs: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`/audit?${params}`);
+    return response.data;
+  },
+
+  getAuditLog: async (id) => {
+    const response = await apiClient.get(`/audit/${id}`);
+    return response.data;
+  }
+};
+
+export const queueAPI = {
+  listJobs: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await apiClient.get(`/queue?${params}`);
+    return response.data;
+  },
+
+  enqueue: async (payload) => {
+    const response = await apiClient.post('/queue', payload);
+    return response.data;
+  },
+
+  dequeue: async (payload = {}) => {
+    const response = await apiClient.post('/queue/dequeue', payload);
+    return response.data;
+  }
+};
+
+export const rbacAPI = {
+  listRoles: async () => {
+    const response = await apiClient.get('/rbac/roles');
     return response.data;
   }
 };

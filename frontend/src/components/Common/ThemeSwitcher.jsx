@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import GlassIcon from './GlassIcon';
 
 const themes = {
   'cyber-dark': {
@@ -14,7 +15,7 @@ const themes = {
       text: '#00ff41',
       textSecondary: '#a0a0a0'
     },
-    icon: '💚'
+    icon: 'shield'
   },
   'neon-magenta': {
     name: 'Neon Magenta',
@@ -28,7 +29,7 @@ const themes = {
       text: '#ff006e',
       textSecondary: '#a09090'
     },
-    icon: '💗'
+    icon: 'risk'
   },
   'hacker-green': {
     name: 'Hacker Green',
@@ -42,7 +43,7 @@ const themes = {
       text: '#00ff00',
       textSecondary: '#009900'
     },
-    icon: '💻'
+    icon: 'terminal'
   },
   'synthwave': {
     name: 'Synthwave',
@@ -56,7 +57,7 @@ const themes = {
       text: '#ff00ff',
       textSecondary: '#cc00cc'
     },
-    icon: '🌆'
+    icon: 'density'
   },
   'minimal': {
     name: 'Minimal',
@@ -70,7 +71,7 @@ const themes = {
       text: '#e0e0e0',
       textSecondary: '#808080'
     },
-    icon: '⚪'
+    icon: 'settings'
   }
 };
 
@@ -243,7 +244,9 @@ const ThemeSwitcher = ({ className = '' }) => {
                   >
                     <div className="flex items-center">
                       {/* Theme Icon */}
-                      <div className="text-2xl mr-3">{theme.icon}</div>
+                      <div className="mr-3">
+                        <GlassIcon name={theme.icon} size="md" tone="green" />
+                      </div>
                       
                       {/* Theme Info */}
                       <div className="flex-1 text-left">

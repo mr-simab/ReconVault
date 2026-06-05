@@ -1,6 +1,7 @@
 // Modal/Dialog Component
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import GlassIcon from './GlassIcon';
 
 const Modal = ({ 
   isOpen, 
@@ -100,7 +101,7 @@ const Modal = ({
                       className="ml-4 p-2 text-cyber-gray hover:text-neon-green hover:bg-cyber-light rounded transition-colors"
                     >
                       <span className="sr-only">Close</span>
-                      ✕
+                      <GlassIcon name="close" size="xs" bare />
                     </motion.button>
                   )}
                 </div>
@@ -147,15 +148,18 @@ export const ConfirmationModal = ({
   const typeStyles = {
     danger: {
       confirmButton: 'btn-cyber-danger',
-      icon: '⚠️'
+      icon: 'alert',
+      tone: 'red'
     },
     warning: {
       confirmButton: 'btn-cyber-secondary',
-      icon: '⚠️'
+      icon: 'alert',
+      tone: 'yellow'
     },
     info: {
       confirmButton: 'btn-cyber-primary',
-      icon: 'ℹ️'
+      icon: 'info',
+      tone: 'cyan'
     }
   };
 
@@ -172,7 +176,7 @@ export const ConfirmationModal = ({
     >
       <div className="space-y-4">
         <div className="flex items-center space-x-3">
-          <span className="text-2xl">{styles.icon}</span>
+          <GlassIcon name={styles.icon} size="md" tone={styles.tone} />
           <p className="text-cyber-gray">{message}</p>
         </div>
         

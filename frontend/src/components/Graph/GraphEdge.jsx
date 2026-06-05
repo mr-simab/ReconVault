@@ -119,8 +119,8 @@ const GraphEdge = ({
     ctx.stroke();
   }
 
-  // Draw edge label for high-confidence or selected edges
-  if ((link.confidence > 0.7 || isSelected) && link.label) {
+  // Draw edge labels only on selection to avoid label collisions in dense graphs.
+  if (isSelected && link.label) {
     const midX = (sourceX + targetX) / 2;
     const midY = (sourceY + targetY) / 2;
     
@@ -166,8 +166,8 @@ const GraphEdge = ({
     ctx.fillText(labelText, labelX, labelY);
   }
 
-  // Draw confidence indicator for selected or important edges
-  if (isSelected || link.confidence > 0.8) {
+  // Draw confidence indicator for selected edges.
+  if (isSelected) {
     const confidence = formatConfidence(link.confidence, false);
     const confX = (sourceX + targetX) / 2;
     const confY = (sourceY + targetY) / 2 + 15;
@@ -180,7 +180,7 @@ const GraphEdge = ({
   }
 
   // Draw relationship type indicator
-  if (link.type && (isSelected || link.confidence > 0.6)) {
+  if (link.type && isSelected) {
     const typeX = (sourceX + targetX) / 2;
     const typeY = (sourceY + targetY) / 2 - 15;
     
@@ -195,12 +195,10 @@ const GraphEdge = ({
     
     // Type icon/text
     ctx.fillStyle = edgeColor;
-    ctx.font = '6px Arial';
+    const typeText = relationshipConfig.icon || link.type.charAt(0);
+    ctx.font = `${typeText.length > 2 ? 4.5 : 6}px "Share Tech Mono", Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    
-    // Use first letter of relationship type or icon
-    const typeText = relationshipConfig.icon || link.type.charAt(0);
     ctx.fillText(typeText, typeX, typeY);
   }
 

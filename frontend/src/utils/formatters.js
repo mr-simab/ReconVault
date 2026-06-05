@@ -222,33 +222,38 @@ export const formatSourceName = (source) => {
   return sourceMap[source?.toUpperCase()] || source || 'Unknown';
 };
 
-// Format status with icons
+// Format status with icon names
 export const formatStatus = (status, type = 'general') => {
   const statusMap = {
     // General status
-    'active': { text: 'Active', icon: '🟢', class: 'text-safe-green' },
-    'inactive': { text: 'Inactive', icon: '🔴', class: 'text-danger-red' },
-    'pending': { text: 'Pending', icon: '🟡', class: 'text-warning-yellow' },
-    'completed': { text: 'Completed', icon: '✅', class: 'text-safe-green' },
-    'failed': { text: 'Failed', icon: '❌', class: 'text-danger-red' },
-    'running': { text: 'Running', icon: '🔄', class: 'text-neon-cyan animate-spin' },
-    'stopped': { text: 'Stopped', icon: '⏹️', class: 'text-cyber-gray' },
+    'active': { text: 'Active', icon: 'check', class: 'text-safe-green' },
+    'inactive': { text: 'Inactive', icon: 'close', class: 'text-danger-red' },
+    'pending': { text: 'Pending', icon: 'clock', class: 'text-warning-yellow' },
+    'completed': { text: 'Completed', icon: 'check', class: 'text-safe-green' },
+    'failed': { text: 'Failed', icon: 'close', class: 'text-danger-red' },
+    'running': { text: 'Running', icon: 'refresh', class: 'text-neon-cyan animate-spin' },
+    'stopped': { text: 'Stopped', icon: 'stop', class: 'text-cyber-gray' },
+    'healthy': { text: 'Healthy', icon: 'check', class: 'text-safe-green' },
+    'ready': { text: 'Ready', icon: 'check', class: 'text-safe-green' },
+    'offline': { text: 'Offline', icon: 'close', class: 'text-danger-red' },
+    'unavailable': { text: 'Unavailable', icon: 'close', class: 'text-danger-red' },
+    'unknown': { text: 'Unknown', icon: 'info', class: 'text-cyber-gray' },
     
     // Connection status
-    'connected': { text: 'Connected', icon: '🔗', class: 'text-safe-green' },
-    'disconnected': { text: 'Disconnected', icon: '❌', class: 'text-danger-red' },
-    'connecting': { text: 'Connecting...', icon: '🔄', class: 'text-warning-yellow animate-pulse' },
+    'connected': { text: 'Connected', icon: 'link', class: 'text-safe-green' },
+    'disconnected': { text: 'Disconnected', icon: 'close', class: 'text-danger-red' },
+    'connecting': { text: 'Connecting...', icon: 'refresh', class: 'text-warning-yellow animate-pulse' },
     
     // Risk levels
-    'critical': { text: 'Critical', icon: '🚨', class: 'text-danger-red' },
-    'high': { text: 'High', icon: '⚠️', class: 'text-neon-orange' },
-    'medium': { text: 'Medium', icon: '⚡', class: 'text-warning-yellow' },
-    'low': { text: 'Low', icon: 'ℹ️', class: 'text-safe-green' },
-    'info': { text: 'Info', icon: 'ℹ️', class: 'text-neon-cyan' }
+    'critical': { text: 'Critical', icon: 'alert', class: 'text-danger-red' },
+    'high': { text: 'High', icon: 'risk', class: 'text-neon-orange' },
+    'medium': { text: 'Medium', icon: 'alert', class: 'text-warning-yellow' },
+    'low': { text: 'Low', icon: 'info', class: 'text-safe-green' },
+    'info': { text: 'Info', icon: 'info', class: 'text-neon-cyan' }
   };
   
   const statusKey = status?.toLowerCase();
-  const mapped = statusMap[statusKey] || { text: status || 'Unknown', icon: '❓', class: 'text-cyber-gray' };
+  const mapped = statusMap[statusKey] || { text: status || 'Unknown', icon: 'info', class: 'text-cyber-gray' };
   
   return {
     text: mapped.text,

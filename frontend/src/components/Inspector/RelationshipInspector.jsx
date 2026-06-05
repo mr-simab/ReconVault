@@ -8,6 +8,7 @@ import {
   formatRelationshipType,
   formatJSON 
 } from '../../utils/formatters';
+import GlassIcon from '../Common/GlassIcon';
 
 const RelationshipInspector = ({
   relationship,
@@ -43,7 +44,7 @@ const RelationshipInspector = ({
           <div className="flex items-center space-x-3">
             <div className="flex items-center space-x-2">
               <EntityTypeBadge type={relationship.source_type || 'UNKNOWN'} size="sm" />
-              <span className="text-neon-green">→</span>
+              <span className="text-neon-green">-&gt;</span>
               <EntityTypeBadge type={relationship.target_type || 'UNKNOWN'} size="sm" />
             </div>
           </div>
@@ -52,11 +53,12 @@ const RelationshipInspector = ({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => handleCopy(relationship.id, 'id')}
-              className="px-3 py-1 text-xs font-mono rounded border border-cyber-border
+              className="px-3 py-1 text-xs font-mono rounded border border-cyber-border flex items-center gap-1
                        bg-cyber-dark text-cyber-gray hover:text-neon-cyan hover:border-neon-cyan
                        transition-colors"
             >
-              {copiedField === 'id' ? '✓ Copied' : '📋 Copy ID'}
+              <GlassIcon name={copiedField === 'id' ? 'check' : 'copy'} size="xs" bare />
+              <span>{copiedField === 'id' ? 'Copied' : 'Copy ID'}</span>
             </motion.button>
           </div>
         </div>
@@ -201,11 +203,12 @@ const RelationshipInspector = ({
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => handleCopy(formatJSON(relationship.metadata), 'metadata')}
-          className="px-3 py-1 text-xs font-mono rounded border border-cyber-border
+          className="px-3 py-1 text-xs font-mono rounded border border-cyber-border flex items-center gap-1
                    bg-cyber-dark text-cyber-gray hover:text-neon-cyan hover:border-neon-cyan
                    transition-colors"
         >
-          {copiedField === 'metadata' ? '✓ Copied' : '📋 Copy JSON'}
+          <GlassIcon name={copiedField === 'metadata' ? 'check' : 'copy'} size="xs" bare />
+          <span>{copiedField === 'metadata' ? 'Copied' : 'Copy JSON'}</span>
         </motion.button>
       </div>
       
@@ -286,27 +289,12 @@ const RelationshipInspector = ({
             </div>
           </div>
         )}
-        
-        {/* Mock history entries */}
-        {[
-          { action: 'Confidence score updated', date: relationship.updated_at, type: 'update' },
-          { action: 'Evidence added', date: relationship.updated_at, type: 'evidence' },
-          { action: 'Relationship verified', date: relationship.updated_at, type: 'verify' }
-        ].map((entry, index) => (
-          <div key={index} className="flex items-center space-x-3 p-3 bg-cyber-light bg-opacity-30 rounded border border-cyber-border">
-            <div className={`w-3 h-3 rounded-full ${
-              entry.type === 'update' ? 'bg-neon-cyan' :
-              entry.type === 'evidence' ? 'bg-neon-purple' :
-              'bg-warning-yellow'
-            }`}></div>
-            <div className="flex-1">
-              <div className="text-xs font-mono text-neon-green">{entry.action}</div>
-              <div className="text-xs text-cyber-gray">
-                {formatDate(entry.date, 'relative')}
-              </div>
-            </div>
+        <div className="flex items-center space-x-3 p-3 bg-cyber-light bg-opacity-30 rounded border border-cyber-border">
+          <GlassIcon name="clock" size="sm" tone="muted" />
+          <div className="flex-1">
+            <div className="text-xs font-mono text-cyber-gray">No additional timeline events recorded</div>
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );

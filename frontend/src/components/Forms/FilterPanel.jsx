@@ -1,7 +1,31 @@
-// Filter Panel Component - Graph filtering controls
+// Filter Panel Component - graph filtering controls
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ENTITY_TYPES, RELATIONSHIP_TYPES, RISK_LEVELS, SOURCE_TYPES } from '../../utils/constants';
+import GlassIcon from '../Common/GlassIcon';
+
+const entityTypeIcons = {
+  USERNAME: 'user',
+  EMAIL: 'email',
+  DOMAIN: 'globe',
+  IP_ADDRESS: 'link',
+  ORG: 'org',
+  PHONE: 'phone',
+  HASH: 'hash',
+  URL: 'link',
+  SOCIAL_PROFILE: 'user',
+  DOCUMENT: 'document',
+  DEVICE: 'device',
+  NETWORK: 'network'
+};
+
+const riskLevelColors = {
+  CRITICAL: 'text-danger-red border-danger-red',
+  HIGH: 'text-neon-orange border-neon-orange',
+  MEDIUM: 'text-warning-yellow border-warning-yellow',
+  LOW: 'text-safe-green border-safe-green',
+  INFO: 'text-neon-cyan border-neon-cyan'
+};
 
 const FilterPanel = ({
   activeFilters = {},
@@ -26,31 +50,45 @@ const FilterPanel = ({
     relationshipTypes: false,
     sources: false,
     confidence: false,
-    dateRange: false,
-    custom: false
+    dateRange: false
   });
 
-  const handleFilterChange = (category, value, checked) => {
-    const newFilters = { ...filters };
-    
-    if (category === 'confidenceRange') {
-      newFilters.confidenceRange = value;
-    } else if (category === 'dateRange') {
-      newFilters.dateRange = value;
-    } else {
-      if (checked) {
-        newFilters[category] = [...newFilters[category], value];
-      } else {
-        newFilters[category] = newFilters[category].filter(item => item !== value);
-      }
-    }
-    
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+  const filterSections = [
+    { id: 'nodeTypes', title: 'Entity Types', icon: 'target', items: ENTITY_TYPES },
+    { id: 'riskLevels', title: 'Risk Levels', icon: 'risk', items: RISK_LEVELS },
+    { id: 'relationshipTypes', title: 'Relationships', icon: 'relationship', items: RELATIONSHIP_TYPES },
+    { id: 'sources', title: 'Data Sources', icon: 'source', items: SOURCE_TYPES }
+  ];
+
+  const getFilterCount = () =>
+    filters.nodeTypes.length +
+    filters.riskLevels.length +
+    filters.relationshipTypes.length +
+    filters.sources.length +
+    (filters.confidenceRange.min > 0 || filters.confidenceRange.max < 1 ? 1 : 0) +
+    (filters.dateRange.start || filters.dateRange.end ? 1 : 0);
+
+  const toggleSection = (section) => {
+    setIsExpanded((prev) => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const handleApplyFilters = () => {
-    onApplyFilters(filters);
+  const updateFilters = (nextFilters) => {
+    setFilters(nextFilters);
+    onFiltersChange(nextFilters);
+  };
+
+  const handleFilterChange = (category, value, checked) => {
+    const nextFilters = { ...filters };
+
+    if (category === 'confidenceRange' || category === 'dateRange') {
+      nextFilters[category] = value;
+    } else {
+      nextFilters[category] = checked
+        ? [...nextFilters[category], value]
+        : nextFilters[category].filter((item) => item !== value);
+    }
+
+    updateFilters(nextFilters);
   };
 
   const handleClearFilters = () => {
@@ -63,431 +101,253 @@ const FilterPanel = ({
       dateRange: { start: null, end: null },
       customFilters: {}
     };
-    
+
     setFilters(clearedFilters);
     onClearFilters();
   };
 
-  const toggleSection = (section) => {
-    setIsExpanded(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+  const applyPreset = (presetFilters) => {
+    const nextFilters = {
+      ...filters,
+      ...presetFilters
+    };
+    updateFilters(nextFilters);
   };
 
-  const getFilterCount = () => {
-    return filters.nodeTypes.length + 
-           filters.riskLevels.length + 
-           filters.relationshipTypes.length + 
-           filters.sources.length +
-           (filters.confidenceRange.min > 0 || filters.confidenceRange.max < 1 ? 1 : 0);
-  };
-
-  const filterSections = [
-    {
-      id: 'nodeTypes',
-      title: 'Entity Types',
-      icon: '🎯',
-      items: ENTITY_TYPES,
-      type: 'multi-select'
-    },
-    {
-      id: 'riskLevels',
-      title: 'Risk Levels',
-      icon: '⚠️',
-      items: RISK_LEVELS,
-      type: 'multi-select'
-    },
-    {
-      id: 'relationshipTypes',
-      title: 'Relationships',
-      icon: '🔗',
-      items: RELATIONSHIP_TYPES,
-      type: 'multi-select'
-    },
-    {
-      id: 'sources',
-      title: 'Data Sources',
-      icon: '📡',
-      items: SOURCE_TYPES,
-      type: 'multi-select'
-    }
-  ];
-
-  const riskLevelColors = {
-    CRITICAL: 'text-danger-red border-danger-red',
-    HIGH: 'text-neon-orange border-neon-orange',
-    MEDIUM: 'text-warning-yellow border-warning-yellow',
-    LOW: 'text-safe-green border-safe-green',
-    INFO: 'text-neon-cyan border-neon-cyan'
-  };
-
-  const entityTypeIcons = {
-    USERNAME: '👤',
-    EMAIL: '✉️',
-    DOMAIN: '🌐',
-    IP_ADDRESS: '🔗',
-    ORG: '🏢',
-    PHONE: '☎️',
-    HASH: '#️⃣',
-    URL: '🔗',
-    SOCIAL_PROFILE: '📱',
-    DOCUMENT: '📄',
-    DEVICE: '💻',
-    NETWORK: '🌐'
-  };
+  const activeCount = getFilterCount();
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       className={`space-y-4 ${className}`}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <span className="text-neon-green">🔧</span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <GlassIcon name="filter" size="sm" tone="green" />
           <h3 className="text-sm font-medium text-neon-green">Graph Filters</h3>
-          {getFilterCount() > 0 && (
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="px-2 py-1 text-xs bg-neon-cyan text-cyber-black rounded-full font-mono"
-            >
-              {getFilterCount()}
-            </motion.span>
+          {activeCount > 0 && (
+            <span className="px-2 py-1 text-xs bg-neon-cyan text-cyber-black rounded-full font-mono">{activeCount}</span>
           )}
         </div>
-        
-        <div className="flex space-x-2">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleApplyFilters}
-            className="
-              px-3 py-1 text-xs font-mono rounded border border-neon-green
-              text-neon-green hover:bg-neon-green hover:text-cyber-black
-              transition-colors
-            "
-          >
+
+        <div className="flex gap-2">
+          <button type="button" onClick={() => onApplyFilters(filters)} className="rv-command-button px-3 py-1 text-xs font-mono text-neon-green">
             Apply
-          </motion.button>
-          {getFilterCount() > 0 && (
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleClearFilters}
-              className="
-                px-3 py-1 text-xs font-mono rounded border border-cyber-border
-                text-cyber-gray hover:text-danger-red hover:border-danger-red
-                transition-colors
-              "
-            >
+          </button>
+          {activeCount > 0 && (
+            <button type="button" onClick={handleClearFilters} className="rv-command-button px-3 py-1 text-xs font-mono text-danger-red hover:border-danger-red">
               Clear
-            </motion.button>
+            </button>
           )}
         </div>
       </div>
 
-      {/* Confidence Range */}
       <div className="space-y-2">
-        <motion.button
-          whileHover={{ scale: 1.01 }}
+        <button
+          type="button"
           onClick={() => toggleSection('confidence')}
-          className="
-            w-full flex items-center justify-between p-3 rounded-lg
-            border border-cyber-border bg-cyber-light
-            hover:border-neon-purple transition-colors
-          "
+          className="rv-command-button w-full flex items-center justify-between p-3"
         >
-          <div className="flex items-center space-x-2">
-            <span>📊</span>
+          <span className="flex items-center gap-2">
+            <GlassIcon name="density" size="xs" tone="purple" />
             <span className="text-sm font-medium text-neon-purple">Confidence Range</span>
-          </div>
+          </span>
           <span className="text-xs text-cyber-gray">
             {Math.round(filters.confidenceRange.min * 100)}% - {Math.round(filters.confidenceRange.max * 100)}%
           </span>
-        </motion.button>
-        
+        </button>
+
         <AnimatePresence>
           {isExpanded.confidence && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="p-3 bg-cyber-dark rounded border border-cyber-border space-y-3"
+              className="rv-panel-section p-3 space-y-3"
             >
-              <div className="space-y-2">
-                <label className="block text-xs font-medium text-neon-cyan">
-                  Minimum Confidence: {Math.round(filters.confidenceRange.min * 100)}%
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={filters.confidenceRange.min}
-                  onChange={(e) => handleFilterChange('confidenceRange', 
-                    { ...filters.confidenceRange, min: parseFloat(e.target.value) })}
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-xs font-medium text-neon-cyan">
-                  Maximum Confidence: {Math.round(filters.confidenceRange.max * 100)}%
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={filters.confidenceRange.max}
-                  onChange={(e) => handleFilterChange('confidenceRange', 
-                    { ...filters.confidenceRange, max: parseFloat(e.target.value) })}
-                  className="w-full"
-                />
-              </div>
+              <RangeInput
+                label={`Minimum Confidence: ${Math.round(filters.confidenceRange.min * 100)}%`}
+                value={filters.confidenceRange.min}
+                onChange={(value) => handleFilterChange('confidenceRange', { ...filters.confidenceRange, min: value })}
+              />
+              <RangeInput
+                label={`Maximum Confidence: ${Math.round(filters.confidenceRange.max * 100)}%`}
+                value={filters.confidenceRange.max}
+                onChange={(value) => handleFilterChange('confidenceRange', { ...filters.confidenceRange, max: value })}
+              />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Filter Sections */}
       {filterSections.map((section) => (
-        <div key={section.id} className="space-y-2">
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            onClick={() => toggleSection(section.id)}
-            className="
-              w-full flex items-center justify-between p-3 rounded-lg
-              border border-cyber-border bg-cyber-light
-              hover:border-neon-cyan transition-colors
-            "
-          >
-            <div className="flex items-center space-x-2">
-              <span>{section.icon}</span>
-              <span className="text-sm font-medium text-neon-cyan">{section.title}</span>
-              {filters[section.id].length > 0 && (
-                <span className="px-2 py-1 text-xs bg-neon-cyan text-cyber-black rounded-full font-mono">
-                  {filters[section.id].length}
-                </span>
-              )}
-            </div>
-            <span className="text-xs text-cyber-gray">
-              {isExpanded[section.id] ? '▼' : '▶️'}
-            </span>
-          </motion.button>
-          
-          <AnimatePresence>
-            {isExpanded[section.id] && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="grid grid-cols-2 gap-2 p-3 bg-cyber-dark rounded border border-cyber-border"
-              >
-                {section.items.map((item) => {
-                  const isSelected = filters[section.id].includes(item);
-                  const isRiskLevel = section.id === 'riskLevels';
-                  const isEntityType = section.id === 'nodeTypes';
-                  
-                  return (
-                    <motion.label
-                      key={item}
-                      whileHover={{ scale: 1.02 }}
-                      className={`
-                        flex items-center space-x-2 p-2 rounded cursor-pointer
-                        border transition-all duration-200
-                        ${isSelected 
-                          ? isRiskLevel 
-                            ? `${riskLevelColors[item]} bg-opacity-10`
-                            : 'border-neon-cyan text-neon-cyan bg-neon-cyan bg-opacity-10'
-                          : 'border-cyber-border text-cyber-gray hover:border-neon-green hover:text-neon-green'
-                        }
-                      `}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => handleFilterChange(section.id, item, e.target.checked)}
-                        className="sr-only"
-                      />
-                      
-                      <span className="text-sm">
-                        {isEntityType ? (entityTypeIcons[item] || '❓') : '✓'}
-                      </span>
-                      
-                      <span className="text-xs font-mono truncate">
-                        {item.replace(/_/g, ' ')}
-                      </span>
-                      
-                      {isSelected && (
-                        <motion.span
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="ml-auto text-xs"
-                        >
-                          ✓
-                        </motion.span>
-                      )}
-                    </motion.label>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        <FilterSection
+          key={section.id}
+          section={section}
+          selectedValues={filters[section.id]}
+          expanded={isExpanded[section.id]}
+          onToggle={() => toggleSection(section.id)}
+          onChange={(item, checked) => handleFilterChange(section.id, item, checked)}
+        />
       ))}
 
-      {/* Date Range Filter */}
       <div className="space-y-2">
-        <motion.button
-          whileHover={{ scale: 1.01 }}
+        <button
+          type="button"
           onClick={() => toggleSection('dateRange')}
-          className="
-            w-full flex items-center justify-between p-3 rounded-lg
-            border border-cyber-border bg-cyber-light
-            hover:border-neon-orange transition-colors
-          "
+          className="rv-command-button w-full flex items-center justify-between p-3"
         >
-          <div className="flex items-center space-x-2">
-            <span>📅</span>
+          <span className="flex items-center gap-2">
+            <GlassIcon name="clock" size="xs" tone="yellow" />
             <span className="text-sm font-medium text-neon-orange">Date Range</span>
-          </div>
-          <span className="text-xs text-cyber-gray">
-            {filters.dateRange.start ? 'Custom' : 'All Time'}
           </span>
-        </motion.button>
-        
+          <span className="text-xs text-cyber-gray">{filters.dateRange.start ? 'Custom' : 'All Time'}</span>
+        </button>
+
         <AnimatePresence>
           {isExpanded.dateRange && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="p-3 bg-cyber-dark rounded border border-cyber-border space-y-3"
+              className="rv-panel-section p-3 space-y-3"
             >
-              <div>
-                <label className="block text-xs font-medium text-neon-orange mb-1">
-                  Start Date
-                </label>
-                <input
-                  type="date"
-                  value={filters.dateRange.start || ''}
-                  onChange={(e) => handleFilterChange('dateRange', 
-                    { ...filters.dateRange, start: e.target.value })}
-                  className="
-                    w-full px-3 py-2 rounded
-                    bg-cyber-black border border-cyber-border
-                    text-neon-green text-sm
-                    focus:border-neon-orange focus:outline-none
-                  "
-                />
-              </div>
-              
-              <div>
-                <label className="block text-xs font-medium text-neon-orange mb-1">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={filters.dateRange.end || ''}
-                  onChange={(e) => handleFilterChange('dateRange', 
-                    { ...filters.dateRange, end: e.target.value })}
-                  className="
-                    w-full px-3 py-2 rounded
-                    bg-cyber-black border border-cyber-border
-                    text-neon-green text-sm
-                    focus:border-neon-orange focus:outline-none
-                  "
-                />
-              </div>
+              <DateInput
+                label="Start Date"
+                value={filters.dateRange.start || ''}
+                onChange={(value) => handleFilterChange('dateRange', { ...filters.dateRange, start: value })}
+              />
+              <DateInput
+                label="End Date"
+                value={filters.dateRange.end || ''}
+                onChange={(value) => handleFilterChange('dateRange', { ...filters.dateRange, end: value })}
+              />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Quick Filter Presets */}
       <div className="space-y-2">
-        <h4 className="text-xs font-medium text-cyber-gray">Quick Presets:</h4>
+        <h4 className="text-xs font-medium text-cyber-gray">Quick Presets</h4>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { 
-              label: 'Critical Only', 
-              filters: { riskLevels: ['CRITICAL'] },
-              icon: '🚨'
-            },
-            { 
-              label: 'High Risk', 
-              filters: { riskLevels: ['CRITICAL', 'HIGH'] },
-              icon: '⚠️'
-            },
-            { 
-              label: 'Social Media', 
-              filters: { nodeTypes: ['SOCIAL_PROFILE', 'EMAIL'] },
-              icon: '📱'
-            },
-            { 
-              label: 'Infrastructure', 
-              filters: { nodeTypes: ['IP_ADDRESS', 'DOMAIN', 'URL'] },
-              icon: '🌐'
-            }
+            { label: 'Critical Only', filters: { riskLevels: ['CRITICAL'] }, icon: 'alert' },
+            { label: 'High Risk', filters: { riskLevels: ['CRITICAL', 'HIGH'] }, icon: 'risk' },
+            { label: 'Social Media', filters: { nodeTypes: ['SOCIAL_PROFILE', 'EMAIL'] }, icon: 'user' },
+            { label: 'Infrastructure', filters: { nodeTypes: ['IP_ADDRESS', 'DOMAIN', 'URL'] }, icon: 'network' }
           ].map((preset) => (
-            <motion.button
+            <button
               key={preset.label}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                const newFilters = { ...filters };
-                Object.entries(preset.filters).forEach(([key, values]) => {
-                  newFilters[key] = values;
-                });
-                setFilters(newFilters);
-                onFiltersChange(newFilters);
-              }}
-              className="
-                p-2 text-xs font-mono rounded border border-cyber-border
-                bg-cyber-light text-cyber-gray hover:text-neon-green hover:border-neon-green
-                transition-colors flex items-center space-x-2
-              "
+              type="button"
+              onClick={() => applyPreset(preset.filters)}
+              className="rv-command-button p-2 text-xs font-mono flex items-center gap-2"
             >
-              <span>{preset.icon}</span>
+              <GlassIcon name={preset.icon} size="xs" tone="cyan" />
               <span>{preset.label}</span>
-            </motion.button>
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Filter Summary */}
-      {getFilterCount() > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-3 bg-neon-green bg-opacity-10 border border-neon-green rounded-lg"
-        >
+      {activeCount > 0 && (
+        <div className="rv-panel-section p-3">
           <div className="text-xs text-neon-green space-y-1">
-            <div className="font-medium">Active Filters:</div>
-            {filters.nodeTypes.length > 0 && (
-              <div>Entities: {filters.nodeTypes.length} types</div>
-            )}
-            {filters.riskLevels.length > 0 && (
-              <div>Risk: {filters.riskLevels.length} levels</div>
-            )}
-            {filters.relationshipTypes.length > 0 && (
-              <div>Relations: {filters.relationshipTypes.length} types</div>
-            )}
-            {filters.sources.length > 0 && (
-              <div>Sources: {filters.sources.length} types</div>
-            )}
-            {(filters.confidenceRange.min > 0 || filters.confidenceRange.max < 1) && (
-              <div>Confidence: {Math.round(filters.confidenceRange.min * 100)}%-{Math.round(filters.confidenceRange.max * 100)}%</div>
-            )}
+            <div className="font-medium">Active Filters</div>
+            {filters.nodeTypes.length > 0 && <div>Entity Types: {filters.nodeTypes.join(', ')}</div>}
+            {filters.riskLevels.length > 0 && <div>Risk Levels: {filters.riskLevels.join(', ')}</div>}
+            {filters.relationshipTypes.length > 0 && <div>Relationships: {filters.relationshipTypes.join(', ')}</div>}
+            {filters.sources.length > 0 && <div>Sources: {filters.sources.join(', ')}</div>}
           </div>
-        </motion.div>
+        </div>
       )}
     </motion.div>
   );
 };
+
+const FilterSection = ({ section, selectedValues, expanded, onToggle, onChange }) => (
+  <div className="space-y-2">
+    <button
+      type="button"
+      onClick={onToggle}
+      className="rv-command-button w-full flex items-center justify-between p-3"
+    >
+      <span className="flex items-center gap-2">
+        <GlassIcon name={section.icon} size="xs" tone="cyan" />
+        <span className="text-sm font-medium text-neon-cyan">{section.title}</span>
+        {selectedValues.length > 0 && (
+          <span className="px-2 py-1 text-xs bg-neon-cyan text-cyber-black rounded-full font-mono">{selectedValues.length}</span>
+        )}
+      </span>
+      <GlassIcon name={expanded ? 'collapse-up' : 'collapse-down'} size="xs" tone="muted" bare />
+    </button>
+
+    <AnimatePresence>
+      {expanded && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          className="grid grid-cols-2 gap-2 rv-panel-section p-3"
+        >
+          {section.items.map((item) => {
+            const isSelected = selectedValues.includes(item);
+            const isRiskLevel = section.id === 'riskLevels';
+            const isEntityType = section.id === 'nodeTypes';
+
+            return (
+              <label
+                key={item}
+                className={`flex items-center gap-2 p-2 rounded cursor-pointer border transition-all duration-200 ${
+                  isSelected
+                    ? isRiskLevel
+                      ? `${riskLevelColors[item]} bg-opacity-10`
+                      : 'border-neon-cyan text-neon-cyan bg-neon-cyan bg-opacity-10'
+                    : 'border-cyber-border text-cyber-gray hover:border-neon-green hover:text-neon-green'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={(event) => onChange(item, event.target.checked)}
+                  className="sr-only"
+                />
+                <GlassIcon name={isEntityType ? (entityTypeIcons[item] || 'info') : isSelected ? 'check' : section.icon} size="xs" tone={isSelected ? 'green' : 'cyan'} />
+                <span className="text-xs font-mono truncate">{item.replace(/_/g, ' ')}</span>
+              </label>
+            );
+          })}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+);
+
+const RangeInput = ({ label, value, onChange }) => (
+  <div className="space-y-2">
+    <label className="block text-xs font-medium text-neon-cyan">{label}</label>
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.05"
+      value={value}
+      onChange={(event) => onChange(parseFloat(event.target.value))}
+      className="w-full"
+    />
+  </div>
+);
+
+const DateInput = ({ label, value, onChange }) => (
+  <div>
+    <label className="block text-xs font-medium text-neon-orange mb-1">{label}</label>
+    <input
+      type="date"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="w-full px-3 py-2 rounded bg-cyber-black border border-cyber-border text-neon-green text-sm focus:border-neon-orange focus:outline-none"
+    />
+  </div>
+);
 
 export default FilterPanel;

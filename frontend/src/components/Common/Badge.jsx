@@ -2,11 +2,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { formatStatus } from '../../utils/formatters';
+import GlassIcon from './GlassIcon';
 
-const Badge = ({ 
-  children, 
-  variant = 'default', 
-  size = 'md', 
+const Badge = ({
+  children,
+  variant = 'default',
+  size = 'md',
   color = 'neon-green',
   icon = null,
   pulse = false,
@@ -14,7 +15,7 @@ const Badge = ({
   clickable = false,
   onClick,
   className = '',
-  ...props 
+  ...props
 }) => {
   const baseClasses = [
     'inline-flex items-center justify-center font-mono font-medium',
@@ -22,7 +23,6 @@ const Badge = ({
     'select-none whitespace-nowrap'
   ];
 
-  // Size variants
   const sizeClasses = {
     xs: 'px-2 py-1 text-xs',
     sm: 'px-2.5 py-1.5 text-sm',
@@ -31,7 +31,6 @@ const Badge = ({
     xl: 'px-5 py-2.5 text-lg'
   };
 
-  // Color variants
   const colorClasses = {
     default: 'bg-cyber-light border-cyber-border text-neon-green',
     primary: 'bg-transparent border-neon-green text-neon-green hover:bg-neon-green hover:text-cyber-black',
@@ -47,7 +46,6 @@ const Badge = ({
     low: 'bg-safe-green border-safe-green text-cyber-black'
   };
 
-  // Risk level specific classes
   const riskClasses = {
     CRITICAL: 'bg-danger-red border-danger-red text-white shadow-glow-red',
     HIGH: 'bg-neon-orange border-neon-orange text-cyber-black shadow-glow-orange',
@@ -56,11 +54,15 @@ const Badge = ({
     INFO: 'bg-neon-cyan border-neon-cyan text-cyber-black shadow-glow-cyan'
   };
 
-  // Status indicator classes
   const statusClasses = {
     connected: 'bg-safe-green border-safe-green text-cyber-black',
     disconnected: 'bg-danger-red border-danger-red text-white',
     connecting: 'bg-warning-yellow border-warning-yellow text-cyber-black animate-pulse',
+    healthy: 'bg-safe-green border-safe-green text-cyber-black',
+    ready: 'bg-safe-green border-safe-green text-cyber-black',
+    unavailable: 'bg-danger-red border-danger-red text-white',
+    offline: 'bg-danger-red border-danger-red text-white',
+    unknown: 'bg-cyber-light border-cyber-border text-cyber-gray',
     active: 'bg-safe-green border-safe-green text-cyber-black',
     inactive: 'bg-cyber-gray border-cyber-gray text-cyber-black',
     running: 'bg-neon-cyan border-neon-cyan text-cyber-black animate-pulse',
@@ -70,25 +72,20 @@ const Badge = ({
     loading: 'bg-cyber-light border-neon-green text-neon-green animate-pulse'
   };
 
-  // Determine which color classes to use
   let finalColorClasses = colorClasses[variant] || colorClasses.default;
-  
-  // Handle risk levels
+
   if (riskClasses[variant]) {
     finalColorClasses = riskClasses[variant];
   }
-  
-  // Handle status types
+
   if (statusClasses[variant]) {
     finalColorClasses = statusClasses[variant];
   }
 
-  // Handle custom colors
   if (variant === 'custom' && color) {
     finalColorClasses = `bg-transparent border-${color} text-${color} hover:bg-${color} hover:text-cyber-black`;
   }
 
-  // Build final className
   const badgeClasses = [
     ...baseClasses,
     sizeClasses[size],
@@ -103,28 +100,13 @@ const Badge = ({
     <>
       {icon && (
         <span className="mr-1.5 text-current">
-          {typeof icon === 'string' ? (
-            <span className="text-sm">{icon}</span>
-          ) : (
-            icon
-          )}
+          {typeof icon === 'string' ? <GlassIcon name={icon} size="xs" bare /> : icon}
         </span>
       )}
       <span>{children}</span>
     </>
   );
 
-  const BadgeComponent = (
-    <span
-      className={badgeClasses}
-      onClick={clickable ? onClick : undefined}
-      {...props}
-    >
-      {content}
-    </span>
-  );
-
-  // Wrap with motion if animations are needed
   if (pulse || glow || clickable) {
     return (
       <motion.span
@@ -139,16 +121,24 @@ const Badge = ({
     );
   }
 
-  return BadgeComponent;
+  return (
+    <span
+      className={badgeClasses}
+      onClick={clickable ? onClick : undefined}
+      {...props}
+    >
+      {content}
+    </span>
+  );
 };
 
-// Predefined Badge Types
 export const StatusBadge = ({ status, ...props }) => {
   const statusInfo = formatStatus(status);
-  
+  const statusKey = (status || 'unknown').toLowerCase();
+
   return (
     <Badge
-      variant={statusInfo.className?.includes('text-') ? statusInfo.className.split(' ')[1] : status.toLowerCase()}
+      variant={statusKey}
       icon={statusInfo.icon}
       {...props}
     >
@@ -159,11 +149,11 @@ export const StatusBadge = ({ status, ...props }) => {
 
 export const RiskBadge = ({ level, score = null, ...props }) => {
   const levelConfig = {
-    CRITICAL: { variant: 'critical', icon: '🚨' },
-    HIGH: { variant: 'high', icon: '⚠️' },
-    MEDIUM: { variant: 'medium', icon: '⚡' },
-    LOW: { variant: 'low', icon: 'ℹ️' },
-    INFO: { variant: 'info', icon: 'ℹ️' }
+    CRITICAL: { variant: 'critical', icon: 'alert' },
+    HIGH: { variant: 'high', icon: 'risk' },
+    MEDIUM: { variant: 'medium', icon: 'alert' },
+    LOW: { variant: 'low', icon: 'info' },
+    INFO: { variant: 'info', icon: 'info' }
   };
 
   const config = levelConfig[level?.toUpperCase()] || levelConfig.INFO;
@@ -181,26 +171,24 @@ export const RiskBadge = ({ level, score = null, ...props }) => {
   );
 };
 
-export const ConnectionBadge = ({ connected, ...props }) => {
-  return (
-    <Badge
-      variant={connected ? 'connected' : 'disconnected'}
-      icon={connected ? '🔗' : '❌'}
-      pulse={!connected}
-      {...props}
-    >
-      {connected ? 'Connected' : 'Disconnected'}
-    </Badge>
-  );
-};
+export const ConnectionBadge = ({ connected, ...props }) => (
+  <Badge
+    variant={connected ? 'connected' : 'disconnected'}
+    icon={connected ? 'link' : 'close'}
+    pulse={!connected}
+    {...props}
+  >
+    {connected ? 'Connected' : 'Disconnected'}
+  </Badge>
+);
 
 export const TaskBadge = ({ status, ...props }) => {
   const statusConfig = {
-    PENDING: { variant: 'warning', icon: '⏳' },
-    RUNNING: { variant: 'info', icon: '🔄', pulse: true },
-    COMPLETED: { variant: 'success', icon: '✅' },
-    FAILED: { variant: 'danger', icon: '❌' },
-    CANCELLED: { variant: 'error', icon: '🚫' }
+    PENDING: { variant: 'warning', icon: 'clock' },
+    RUNNING: { variant: 'info', icon: 'refresh', pulse: true },
+    COMPLETED: { variant: 'success', icon: 'check' },
+    FAILED: { variant: 'danger', icon: 'close' },
+    CANCELLED: { variant: 'error', icon: 'stop' }
   };
 
   const config = statusConfig[status] || statusConfig.PENDING;
@@ -219,21 +207,21 @@ export const TaskBadge = ({ status, ...props }) => {
 
 export const EntityTypeBadge = ({ type, ...props }) => {
   const typeConfig = {
-    USERNAME: { variant: 'secondary', icon: '👤' },
-    EMAIL: { variant: 'secondary', icon: '✉️' },
-    DOMAIN: { variant: 'primary', icon: '🌐' },
-    IP_ADDRESS: { variant: 'warning', icon: '🔗' },
-    ORG: { variant: 'info', icon: '🏢' },
-    PHONE: { variant: 'warning', icon: '☎️' },
-    HASH: { variant: 'danger', icon: '#️⃣' },
-    URL: { variant: 'primary', icon: '🔗' },
-    SOCIAL_PROFILE: { variant: 'secondary', icon: '📱' },
-    DOCUMENT: { variant: 'info', icon: '📄' },
-    DEVICE: { variant: 'warning', icon: '💻' },
-    NETWORK: { variant: 'warning', icon: '🌐' }
+    USERNAME: { variant: 'secondary', icon: 'user' },
+    EMAIL: { variant: 'secondary', icon: 'email' },
+    DOMAIN: { variant: 'primary', icon: 'globe' },
+    IP_ADDRESS: { variant: 'warning', icon: 'link' },
+    ORG: { variant: 'info', icon: 'org' },
+    PHONE: { variant: 'warning', icon: 'phone' },
+    HASH: { variant: 'danger', icon: 'hash' },
+    URL: { variant: 'primary', icon: 'link' },
+    SOCIAL_PROFILE: { variant: 'secondary', icon: 'user' },
+    DOCUMENT: { variant: 'info', icon: 'document' },
+    DEVICE: { variant: 'warning', icon: 'device' },
+    NETWORK: { variant: 'warning', icon: 'network' }
   };
 
-  const config = typeConfig[type] || { variant: 'default', icon: '❓' };
+  const config = typeConfig[type] || { variant: 'default', icon: 'info' };
 
   return (
     <Badge

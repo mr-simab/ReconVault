@@ -13,6 +13,17 @@ class GraphService {
     this.listeners = new Map();
   }
 
+  riskLevelToScore(level) {
+    const scores = {
+      CRITICAL: 0.9,
+      HIGH: 0.7,
+      MEDIUM: 0.5,
+      LOW: 0.25,
+      INFO: 0.1
+    };
+    return scores[String(level || '').toUpperCase()] ?? 0.1;
+  }
+
   getEndpointId(endpoint) {
     if (endpoint && typeof endpoint === 'object') return endpoint.id;
     return endpoint;
@@ -60,8 +71,8 @@ class GraphService {
   processGraphData(data) {
     const nodes = (data.nodes || []).map(node => ({
       ...node,
-      riskScore: node.risk_score || node.riskScore || 0.5,
-      riskLevel: getRiskLevelFromScore(node.risk_score || node.riskScore || 0.5),
+      riskScore: node.risk_score || node.riskScore || this.riskLevelToScore(node.riskLevel),
+      riskLevel: node.riskLevel || getRiskLevelFromScore(node.risk_score || node.riskScore || 0.1),
       connections: 0, // Will be calculated
       size: this.calculateNodeSize(node),
       color: this.getNodeColor(node)
@@ -284,18 +295,19 @@ class GraphService {
 
   // Process entity data
   processEntity(entity) {
-    const riskScore = entity.risk_score || entity.riskScore || 0.5;
+    const riskScore = entity.risk_score || entity.riskScore || this.riskLevelToScore(entity.riskLevel);
+    const riskLevel = entity.riskLevel || getRiskLevelFromScore(riskScore);
 
     return {
       ...entity,
       riskScore,
-      riskLevel: getRiskLevelFromScore(riskScore),
+      riskLevel,
       connections: this.getEntityConnectionCount(entity.id),
       size: this.calculateNodeSize({
         ...entity,
         connections: this.getEntityConnectionCount(entity.id)
       }),
-      color: this.getNodeColor({ riskLevel: getRiskLevelFromScore(riskScore) })
+      color: this.getNodeColor({ riskLevel })
     };
   }
 

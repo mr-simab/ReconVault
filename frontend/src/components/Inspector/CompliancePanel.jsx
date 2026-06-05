@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { complianceAPI } from '../../services/api';
+import GlassIcon from '../Common/GlassIcon';
 
 const CompliancePanel = () => {
   const [violations, setViolations] = useState([]);
@@ -15,11 +17,10 @@ const CompliancePanel = () => {
   const fetchViolations = async () => {
     setLoading(true);
     try {
-      let url = `/api/compliance/violations?resolved=${filter.resolved}`;
-      if (filter.severity) url += `&severity=${filter.severity}`;
-      
-      const response = await fetch(url);
-      const data = await response.json();
+      const data = await complianceAPI.getComplianceViolations({
+        resolved: filter.resolved,
+        ...(filter.severity ? { severity: filter.severity } : {})
+      });
       setViolations(data.violations || []);
     } catch (err) {
       console.error('Failed to fetch violations', err);
@@ -30,19 +31,13 @@ const CompliancePanel = () => {
 
   const resolveViolation = async (id, notes = "Resolved by operator") => {
     try {
-      const response = await fetch(`/api/compliance/violations/${id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes })
-      });
-      if (response.ok) {
-        if (!filter.resolved) {
-          setViolations(violations.filter(v => v.id !== id));
-        } else {
-          fetchViolations();
-        }
-        if (selectedViolation?.id === id) setSelectedViolation(null);
+      await complianceAPI.resolveComplianceViolation(id, notes);
+      if (!filter.resolved) {
+        setViolations(violations.filter(v => v.id !== id));
+      } else {
+        fetchViolations();
       }
+      if (selectedViolation?.id === id) setSelectedViolation(null);
     } catch (err) {
       console.error('Failed to resolve violation', err);
     }
@@ -68,8 +63,8 @@ const CompliancePanel = () => {
   return (
     <div className="flex flex-col h-full bg-cyber-dark text-cyber-gray font-mono overflow-hidden relative">
       <div className="p-4 border-b border-cyber-border bg-cyber-light">
-        <h2 className="text-sm font-bold flex items-center text-neon-green uppercase tracking-widest">
-          <span className="mr-2">🛡️</span>
+        <h2 className="text-sm font-bold flex items-center gap-2 text-neon-green uppercase tracking-widest">
+          <GlassIcon name="shield" size="xs" tone="green" />
           Policy Violations
         </h2>
       </div>
@@ -77,7 +72,9 @@ const CompliancePanel = () => {
       {/* Search and Filter */}
       <div className="p-4 space-y-3 bg-cyber-dark border-b border-cyber-border">
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs">🔍</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-neon-cyan">
+            <GlassIcon name="search" size="xs" bare />
+          </span>
           <input 
             type="text" 
             placeholder="Search logs..." 
@@ -138,7 +135,9 @@ const CompliancePanel = () => {
           ))
         ) : (
           <div className="p-12 text-center">
-            <span className="text-3xl block mb-2 opacity-20">✅</span>
+            <div className="flex justify-center mb-2 opacity-40">
+              <GlassIcon name="check" size="lg" tone="green" />
+            </div>
             <p className="text-[10px] text-cyber-gray uppercase tracking-widest font-bold">No active threats</p>
           </div>
         )}
@@ -160,7 +159,7 @@ const CompliancePanel = () => {
                 onClick={() => setSelectedViolation(null)}
                 className="p-1 hover:bg-cyber-light rounded transition text-neon-cyan"
               >
-                <span>❌</span>
+                <GlassIcon name="close" size="xs" tone="cyan" bare />
               </button>
             </div>
             <div className="p-5 overflow-y-auto flex-grow space-y-6 scrollable-cyber">
@@ -204,13 +203,13 @@ const CompliancePanel = () => {
                     onClick={() => resolveViolation(selectedViolation.id)}
                     className="w-full py-3 bg-neon-green text-cyber-black font-black text-[10px] uppercase tracking-widest shadow-lg shadow-neon-green/10 flex items-center justify-center transition-all active:scale-95 hover:bg-opacity-90"
                   >
-                    <span>✅</span>
+                    <GlassIcon name="check" size="xs" bare />
                     <span className="ml-2">RESOLVE_THREAT</span>
                   </button>
                 </div>
               ) : (
                 <div className="p-4 border border-safe-green border-opacity-30 rounded bg-safe-green bg-opacity-5 flex items-center text-safe-green">
-                  <span className="mr-3">✅</span>
+                  <GlassIcon name="check" size="sm" tone="green" />
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-tighter">THREAT_NEUTRALIZED</p>
                     <p className="text-[10px] opacity-70 font-mono">{selectedViolation.resolved_at ? new Date(selectedViolation.resolved_at).toLocaleString() : 'RECENT'}</p>

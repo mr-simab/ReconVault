@@ -2,67 +2,67 @@
 export const ENTITY_TYPE_MAP = {
   USERNAME: { 
     color: '#00d9ff', 
-    icon: '👤',
+    icon: 'US',
     glow: 'glow-cyan'
   },
   EMAIL: { 
     color: '#ff006e', 
-    icon: '✉️',
+    icon: 'EM',
     glow: 'glow-red'
   },
   DOMAIN: { 
     color: '#00ff41', 
-    icon: '🌐',
+    icon: 'DM',
     glow: 'glow-green'
   },
   IP_ADDRESS: { 
     color: '#ffaa00', 
-    icon: '🔗',
+    icon: 'IP',
     glow: 'glow-yellow'
   },
   ORG: { 
     color: '#8f00ff', 
-    icon: '🏢',
+    icon: 'OG',
     glow: 'glow-purple'
   },
   PHONE: { 
     color: '#ff6600', 
-    icon: '☎️',
+    icon: 'PH',
     glow: 'glow-orange'
   },
   HASH: { 
     color: '#ff0033', 
-    icon: '#️⃣',
+    icon: '#',
     glow: 'glow-red'
   },
   URL: { 
     color: '#00ff41', 
-    icon: '🔗',
+    icon: 'URL',
     glow: 'glow-green'
   },
   SOCIAL_PROFILE: { 
     color: '#00d9ff', 
-    icon: '📱',
+    icon: 'SO',
     glow: 'glow-cyan'
   },
   DOCUMENT: { 
     color: '#8f00ff', 
-    icon: '📄',
+    icon: 'DC',
     glow: 'glow-purple'
   },
   DEVICE: { 
     color: '#ff6600', 
-    icon: '💻',
+    icon: 'DV',
     glow: 'glow-orange'
   },
   NETWORK: { 
     color: '#ffaa00', 
-    icon: '🌐',
+    icon: 'NW',
     glow: 'glow-yellow'
   },
   UNKNOWN: { 
     color: '#888888', 
-    icon: '❓',
+    icon: '?',
     glow: 'glow-gray'
   }
 };
@@ -100,43 +100,43 @@ export const RISK_LEVEL_MAP = {
 export const RELATIONSHIP_TYPE_MAP = {
   'RELATED_TO': { 
     color: '#888888', 
-    icon: '↔️' 
+    icon: 'REL'
   },
   'MENTIONS': { 
     color: '#00d9ff', 
-    icon: '💬' 
+    icon: 'MEN'
   },
   'OWNS': { 
     color: '#ff006e', 
-    icon: '👑' 
+    icon: 'OWN'
   },
   'OPERATES': { 
     color: '#00ff41', 
-    icon: '⚙️' 
+    icon: 'OPS'
   },
   'COMMUNICATES_WITH': { 
     color: '#8f00ff', 
-    icon: '📡' 
+    icon: 'COM'
   },
   'LOCATED_AT': { 
     color: '#ffaa00', 
-    icon: '📍' 
+    icon: 'LOC'
   },
   'PART_OF': { 
     color: '#ff6600', 
-    icon: '🏗️' 
+    icon: 'PRT'
   },
   'SUBSIDIARY_OF': { 
     color: '#00d9ff', 
-    icon: '🏢' 
+    icon: 'SUB'
   },
   'DEPENDS_ON': { 
     color: '#ff0033', 
-    icon: '🔗' 
+    icon: 'DEP'
   },
   'PROVIDES': { 
     color: '#00ff41', 
-    icon: '🛠️' 
+    icon: 'PRV'
   }
 };
 

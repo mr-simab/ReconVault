@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_CONFIG, WEBSOCKET_CONFIG } from '../../utils/constants';
+import GlassIcon from './GlassIcon';
 
 const defaultSettings = {
   // Graph Settings
@@ -21,8 +23,8 @@ const defaultSettings = {
   showInfoNotifications: true,
   
   // API Settings
-  backendURL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
-  websocketURL: process.env.REACT_APP_WS_URL || 'ws://localhost:8000',
+  backendURL: API_CONFIG.BASE_URL.replace(/\/api\/v1\/?$/, ''),
+  websocketURL: WEBSOCKET_CONFIG.URL,
   requestTimeout: 30000, // ms
   retryCount: 3,
   
@@ -92,10 +94,10 @@ const SettingsPanel = ({ isOpen, onClose, onSettingsChange }) => {
   };
 
   const sections = [
-    { id: 'graph', name: 'Graph', icon: '📊' },
-    { id: 'notifications', name: 'Notifications', icon: '🔔' },
-    { id: 'api', name: 'API', icon: '🔌' },
-    { id: 'export', name: 'Export', icon: '📤' }
+    { id: 'graph', name: 'Graph', icon: 'graph' },
+    { id: 'notifications', name: 'Notifications', icon: 'info' },
+    { id: 'api', name: 'API', icon: 'server' },
+    { id: 'export', name: 'Export', icon: 'export' }
   ];
 
   return (
@@ -147,13 +149,14 @@ const SettingsPanel = ({ isOpen, onClose, onSettingsChange }) => {
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
-                    className={`px-4 py-2 rounded-lg font-mono whitespace-nowrap transition-colors ${
+                    className={`px-4 py-2 rounded-lg font-mono whitespace-nowrap transition-colors inline-flex items-center gap-2 ${
                       activeSection === section.id
                         ? 'bg-neon-green text-cyber-black'
                         : 'bg-cyber-dark text-gray-400 hover:text-neon-green'
                     }`}
                   >
-                    {section.icon} {section.name}
+                    <GlassIcon name={section.icon} size="xs" tone={activeSection === section.id ? 'green' : 'cyan'} />
+                    <span>{section.name}</span>
                   </button>
                 ))}
               </div>
@@ -399,7 +402,6 @@ const SettingsPanel = ({ isOpen, onClose, onSettingsChange }) => {
                       <option value="csv">CSV</option>
                       <option value="png">PNG</option>
                       <option value="svg">SVG</option>
-                      <option value="neo4j">Neo4j Cypher</option>
                       <option value="gml">GML</option>
                       <option value="graphml">GraphML</option>
                     </select>

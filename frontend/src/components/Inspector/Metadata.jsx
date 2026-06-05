@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatJSON } from '../../utils/formatters';
+import GlassIcon from '../Common/GlassIcon';
 
 const Metadata = ({
   metadata = {},
@@ -183,13 +184,11 @@ const Metadata = ({
               onClick={() => setIsExpanded(!isExpanded)}
               className="text-neon-green hover:text-neon-cyan transition-colors"
             >
-              <span className="text-sm">
-                {isExpanded ? '▼' : '▶️'}
-              </span>
+              <GlassIcon name={isExpanded ? 'collapse-up' : 'collapse-down'} size="xs" tone="cyan" bare />
             </motion.button>
           )}
           <div className="flex items-center space-x-2">
-            <span className="text-neon-green">📋</span>
+            <GlassIcon name="docs" size="xs" tone="green" />
             <h4 className="text-sm font-medium text-neon-green">{title}</h4>
             <span className="px-2 py-1 text-xs bg-neon-cyan text-cyber-black rounded-full font-mono">
               {stats.totalKeys}
@@ -209,7 +208,10 @@ const Metadata = ({
                 transition-colors
               "
             >
-              {copied ? '✓ Copied' : '📋 Copy'}
+              <span className="inline-flex items-center gap-1">
+                <GlassIcon name={copied ? 'check' : 'copy'} size="xs" bare />
+                {copied ? 'Copied' : 'Copy'}
+              </span>
             </motion.button>
           )}
           
@@ -223,7 +225,10 @@ const Metadata = ({
               transition-colors
             "
           >
-            💾 Export
+            <span className="inline-flex items-center gap-1">
+              <GlassIcon name="export" size="xs" bare />
+              Export
+            </span>
           </motion.button>
         </div>
       </div>
@@ -265,7 +270,7 @@ const Metadata = ({
             "
           />
           <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <span className="text-cyber-gray">🔍</span>
+            <GlassIcon name="search" size="xs" tone="muted" bare />
           </div>
         </div>
       )}
@@ -281,7 +286,9 @@ const Metadata = ({
           >
             {Object.keys(filteredMetadata).length === 0 ? (
               <div className="text-center py-8 text-cyber-gray">
-                <span className="text-2xl block mb-2">📋</span>
+                <div className="flex justify-center mb-2">
+                  <GlassIcon name="docs" size="lg" tone="muted" />
+                </div>
                 <p className="text-sm">
                   {searchTerm ? 'No metadata matches your search' : 'No metadata available'}
                 </p>

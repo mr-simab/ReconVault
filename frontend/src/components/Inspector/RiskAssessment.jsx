@@ -3,6 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { RiskBadge } from '../Common/Badge';
 import { formatRiskScore } from '../../utils/formatters';
+import GlassIcon from '../Common/GlassIcon';
 
 const RiskAssessment = ({
   riskScore = 0,
@@ -18,31 +19,31 @@ const RiskAssessment = ({
         color: 'text-danger-red', 
         bgColor: 'bg-danger-red',
         glowColor: 'shadow-glow-red',
-        icon: '🚨'
+        icon: 'alert'
       },
       HIGH: { 
         color: 'text-neon-orange', 
         bgColor: 'bg-neon-orange',
         glowColor: 'shadow-glow-orange',
-        icon: '⚠️'
+        icon: 'risk'
       },
       MEDIUM: { 
         color: 'text-warning-yellow', 
         bgColor: 'bg-warning-yellow',
         glowColor: 'shadow-glow-yellow',
-        icon: '⚡'
+        icon: 'alert'
       },
       LOW: { 
         color: 'text-safe-green', 
         bgColor: 'bg-safe-green',
         glowColor: 'shadow-glow-green',
-        icon: 'ℹ️'
+        icon: 'info'
       },
       INFO: { 
         color: 'text-neon-cyan', 
         bgColor: 'bg-neon-cyan',
         glowColor: 'shadow-glow-cyan',
-        icon: 'ℹ️'
+        icon: 'info'
       }
     };
     return configs[level] || configs.INFO;
@@ -115,11 +116,11 @@ const RiskAssessment = ({
       className="flex items-start space-x-3 p-3 bg-cyber-dark rounded-lg border border-cyber-border"
     >
       <div className="flex-shrink-0 mt-1">
-        <span className="text-sm">
-          {factor.severity === 'critical' ? '🚨' :
-           factor.severity === 'high' ? '⚠️' :
-           factor.severity === 'medium' ? '⚡' : 'ℹ️'}
-        </span>
+        <GlassIcon
+          name={factor.severity === 'critical' || factor.severity === 'high' ? 'alert' : factor.severity === 'medium' ? 'risk' : 'info'}
+          size="xs"
+          tone={factor.severity === 'critical' || factor.severity === 'high' ? 'red' : factor.severity === 'medium' ? 'yellow' : 'cyan'}
+        />
       </div>
       
       <div className="flex-1 min-w-0">
@@ -171,7 +172,7 @@ const RiskAssessment = ({
       className="flex items-start space-x-3 p-3 bg-cyber-dark rounded-lg border border-safe-green"
     >
       <div className="flex-shrink-0 mt-1">
-        <span className="text-sm">✅</span>
+        <GlassIcon name="check" size="xs" tone="green" />
       </div>
       
       <div className="flex-1 min-w-0">
@@ -207,7 +208,9 @@ const RiskAssessment = ({
       return (
         <div className="h-24 bg-cyber-dark rounded-lg border border-cyber-border flex items-center justify-center">
           <div className="text-center text-cyber-gray">
-            <div className="text-2xl mb-1">📊</div>
+            <div className="flex justify-center mb-1">
+              <GlassIcon name="density" size="md" tone="muted" />
+            </div>
             <div className="text-xs">No trend data available</div>
           </div>
         </div>
@@ -257,7 +260,7 @@ const RiskAssessment = ({
             ${config.color} ${config.bgColor} bg-opacity-10 ${config.glowColor}
           `}
         >
-          <span className="text-lg">{config.icon}</span>
+          <GlassIcon name={config.icon} size="sm" tone={riskLevel === 'CRITICAL' || riskLevel === 'HIGH' ? 'red' : riskLevel === 'MEDIUM' ? 'yellow' : 'cyan'} />
           <span className="font-cyber text-lg font-bold">
             {riskLevel}
           </span>
@@ -272,10 +275,10 @@ const RiskAssessment = ({
       {/* Risk Factors */}
       {riskFactors && riskFactors.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-neon-green flex items-center space-x-2">
-            <span>⚠️</span>
-            <span>Risk Factors ({riskFactors.length})</span>
-          </h4>
+        <h4 className="text-sm font-medium text-neon-green flex items-center space-x-2">
+          <GlassIcon name="risk" size="xs" tone="yellow" />
+          <span>Risk Factors ({riskFactors.length})</span>
+        </h4>
           
           <div className="space-y-2 max-h-48 overflow-y-auto scrollable-cyber">
             {riskFactors.map((factor, index) => (
@@ -288,7 +291,7 @@ const RiskAssessment = ({
       {/* Risk Trend */}
       <div className="space-y-3">
         <h4 className="text-sm font-medium text-neon-green flex items-center space-x-2">
-          <span>📈</span>
+          <GlassIcon name="density" size="xs" tone="green" />
           <span>Risk Trend</span>
         </h4>
         
@@ -298,8 +301,8 @@ const RiskAssessment = ({
       {/* Mitigations */}
       {mitigations && mitigations.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-neon-green flex items-center space-x-2">
-            <span>🛡️</span>
+        <h4 className="text-sm font-medium text-neon-green flex items-center space-x-2">
+            <GlassIcon name="shield" size="xs" tone="green" />
             <span>Recommended Mitigations ({mitigations.length})</span>
           </h4>
           

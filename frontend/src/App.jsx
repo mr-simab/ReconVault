@@ -1,5 +1,5 @@
 // ReconVault Main Application Component - Cyber Graph Visualization Interface
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useGraph } from './hooks/useGraph';
 import { useWebSocket } from './hooks/useWebSocket';
@@ -11,12 +11,12 @@ import { API_CONFIG } from './utils/constants';
 import TopHeader from './components/Panels/TopHeader';
 import LeftSidebar from './components/Panels/LeftSidebar';
 import RightSidebar from './components/Panels/RightSidebar';
-import BottomStats from './components/Panels/BottomStats';
 import GraphCanvas from './components/Graph/GraphCanvas';
 import ComplianceDashboard from './components/Dashboard/ComplianceDashboard';
-
-// Form Components
-import ReconSearchForm from './components/Forms/ReconSearchForm';
+import InvestigationDashboard from './components/Dashboard/InvestigationDashboard';
+import IntelligenceOpsDashboard from './components/Dashboard/IntelligenceOpsDashboard';
+import MCPPlayground from './components/Dashboard/MCPPlayground';
+import GlassIcon from './components/Common/GlassIcon';
 
 // Import styles
 import './styles/main.css';
@@ -25,13 +25,24 @@ function App() {
   // State management
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
-  const [bottomStatsCollapsed, setBottomStatsCollapsed] = useState(false);
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [selectedEdge, setSelectedEdge] = useState(null);
   const [graphContainerSize, setGraphContainerSize] = useState({ width: 800, height: 600 });
-  const [activeView, setActiveView] = useState('graph'); // 'graph' or 'compliance'
+  const graphPanelRef = useRef(null);
+  const [activeView, setActiveView] = useState('graph'); // graph, investigations, operations, mcp, or compliance
   const [collectionStarting, setCollectionStarting] = useState(false);
+  const [serviceStatus, setServiceStatus] = useState({
+    database: {
+      status: 'checking',
+      detail: 'Checking',
+      title: 'Firebase Realtime Database status'
+    },
+    mcp: {
+      status: 'checking',
+      detail: 'Checking',
+      title: 'MCP gateway status'
+    }
+  });
 
   // Hooks
   const {
@@ -41,14 +52,49 @@ function App() {
     error,
     filters,
     updateFilters,
-    selectNode,
-    selectEdge,
     refreshGraph,
-    performance
   } = useGraph();
 
-  const { connected: wsConnected, connecting: wsConnecting, addEventListener } = useWebSocket();
+  const { connected: wsConnected, addEventListener } = useWebSocket();
   const { success, error: showError, loading: showLoading } = useToast();
+
+  // Collection history and active tasks come from the backend only.
+  const [collectionHistory, setCollectionHistory] = useState([]);
+  const [activeTasks, setActiveTasks] = useState([]);
+
+  const normalizeCollectionTask = useCallback((task) => {
+    const id = task.taskId || task.task_id || task.id;
+    const collectorsCompleted = task.collectorsCompleted || task.collectors_completed || [];
+    const collectorsFailed = task.collectorsFailed || task.collectors_failed || [];
+    const collectorsRequested = task.collectorsRequested || task.collectors_requested || task.types || [];
+    const progress = task.progress ?? task.progress_percent ?? 0;
+    const total = collectorsRequested.length || collectorsCompleted.length + collectorsFailed.length || 1;
+
+    return {
+      id,
+      taskId: id,
+      target: task.target || '',
+      types: collectorsRequested,
+      type: collectorsRequested.join(', ') || 'collection',
+      status: task.status || 'UNKNOWN',
+      progress,
+      completed: collectorsCompleted.length,
+      failed: collectorsFailed.length,
+      total,
+      timestamp: task.startTime || task.start_time || task.createdAt || new Date().toISOString()
+    };
+  }, []);
+
+  const refreshCollectionTasks = useCallback(async () => {
+    try {
+      const response = await collectionAPI.getCollectionTasks();
+      const tasks = (response.tasks || response.data || []).map(normalizeCollectionTask);
+      setCollectionHistory(tasks.filter((task) => task.status !== 'RUNNING'));
+      setActiveTasks(tasks.filter((task) => task.status === 'RUNNING'));
+    } catch (error) {
+      console.warn('Collection task refresh failed:', error.message);
+    }
+  }, [normalizeCollectionTask]);
 
   // WebSocket Event Listeners
   useEffect(() => {
@@ -63,221 +109,42 @@ function App() {
     }
   }, [wsConnected, addEventListener, showError]);
 
-  // Sample data fallback for demo/degraded mode
-  const [sampleData] = useState({
-    nodes: [
-      {
-        id: '1',
-        value: 'malware-c2.example.com',
-        type: 'DOMAIN',
-        riskLevel: 'CRITICAL',
-        riskScore: 0.95,
-        confidence: 0.9,
-        source: 'VIRUSTOTAL',
-        connections: 5,
-        size: 20,
-        color: '#ff0033',
-        metadata: {
-          firstSeen: '2024-01-15T10:30:00Z',
-          lastSeen: '2024-01-20T14:22:00Z',
-          categories: ['malware', 'command-and-control'],
-          threatIntel: {
-            score: 95,
-            sources: ['VT', 'Shodan', 'AlienVault']
-          }
-        },
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-20T14:22:00Z'
-      },
-      {
-        id: '2',
-        value: '192.168.1.100',
-        type: 'IP_ADDRESS',
-        riskLevel: 'HIGH',
-        riskScore: 0.75,
-        confidence: 0.85,
-        source: 'SHODAN',
-        connections: 8,
-        size: 16,
-        color: '#ff6600',
-        metadata: {
-          geo: { country: 'US', city: 'New York' },
-          openPorts: [22, 80, 443, 8080],
-          org: 'Suspicious Organization'
-        },
-        created_at: '2024-01-18T09:15:00Z',
-        updated_at: '2024-01-20T12:00:00Z'
-      },
-      {
-        id: '3',
-        value: 'phishing@malicious.net',
-        type: 'EMAIL',
-        riskLevel: 'MEDIUM',
-        riskScore: 0.65,
-        confidence: 0.8,
-        source: 'WEB_SCRAPER',
-        connections: 3,
-        size: 12,
-        color: '#ffaa00',
-        metadata: {
-          domain: 'malicious.net',
-          associatedCampaigns: ['Phish-2024-001'],
-          reports: 12
-        },
-        created_at: '2024-01-16T16:45:00Z',
-        updated_at: '2024-01-19T11:30:00Z'
-      },
-      {
-        id: '4',
-        value: 'suspicious-user',
-        type: 'USERNAME',
-        riskLevel: 'LOW',
-        riskScore: 0.35,
-        confidence: 0.7,
-        source: 'SOCIAL_MEDIA',
-        connections: 2,
-        size: 10,
-        color: '#00dd00',
-        metadata: {
-          platforms: ['Twitter', 'LinkedIn'],
-          followers: 1250,
-          verified: false
-        },
-        created_at: '2024-01-17T14:20:00Z',
-        updated_at: '2024-01-18T08:45:00Z'
-      },
-      {
-        id: '5',
-        value: 'secure-corp.com',
-        type: 'DOMAIN',
-        riskLevel: 'INFO',
-        riskScore: 0.15,
-        confidence: 0.95,
-        source: 'MANUAL',
-        connections: 4,
-        size: 8,
-        color: '#00d9ff',
-        metadata: {
-          legitimate: true,
-          sslCertificate: true,
-          whoisInfo: 'Registered 2020'
-        },
-        created_at: '2024-01-10T12:00:00Z',
-        updated_at: '2024-01-20T16:00:00Z'
-      }
-    ],
-    edges: [
-      {
-        id: 'e1',
-        source: '1',
-        target: '2',
-        type: 'COMMUNICATES_WITH',
-        confidence: 0.9,
-        strength: 0.8,
-        metadata: {
-          protocols: ['HTTP', 'HTTPS'],
-          frequency: 'daily',
-          dataVolume: '2.3MB'
-        },
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-20T14:22:00Z'
-      },
-      {
-        id: 'e2',
-        source: '2',
-        target: '3',
-        type: 'OWNS',
-        confidence: 0.75,
-        strength: 0.6,
-        metadata: {
-          evidence: ['Email headers', 'Server logs'],
-          timeframe: '2024-01-16 to 2024-01-19'
-        },
-        created_at: '2024-01-16T16:45:00Z',
-        updated_at: '2024-01-19T11:30:00Z'
-      },
-      {
-        id: 'e3',
-        source: '3',
-        target: '4',
-        type: 'MENTIONS',
-        confidence: 0.6,
-        strength: 0.4,
-        metadata: {
-          platform: 'Twitter',
-          mentions: 5,
-          sentiment: 'negative'
-        },
-        created_at: '2024-01-17T14:20:00Z',
-        updated_at: '2024-01-18T08:45:00Z'
-      },
-      {
-        id: 'e4',
-        source: '5',
-        target: '2',
-        type: 'PART_OF',
-        confidence: 0.85,
-        strength: 0.7,
-        metadata: {
-          relationship: 'infrastructure',
-          dnsRecords: ['A', 'MX', 'NS']
-        },
-        created_at: '2024-01-10T12:00:00Z',
-        updated_at: '2024-01-20T16:00:00Z'
-      }
-    ]
-  });
+  useEffect(() => {
+    if (!wsConnected) return undefined;
 
-  // System status
-  const [systemStatus, setSystemStatus] = useState({
-    backend: 'healthy',
-    database: 'connected',
-    neo4j: 'connected',
-    redis: 'connected'
-  });
+    const upsertActiveTask = (payload) => {
+      const task = normalizeCollectionTask(payload);
+      setActiveTasks((prev) => {
+        const withoutCurrent = prev.filter((item) => item.id !== task.id);
+        return task.status === 'RUNNING' ? [task, ...withoutCurrent] : withoutCurrent;
+      });
+    };
 
-  // Collection history and active tasks
-  const [collectionHistory] = useState([
-    {
-      target: 'suspicious-domain.com',
-      types: ['domain', 'web'],
-      timestamp: '2024-01-20T15:30:00Z',
-      status: 'completed'
-    },
-    {
-      target: 'phishing-campaign.net',
-      types: ['email', 'social'],
-      timestamp: '2024-01-19T10:15:00Z',
-      status: 'completed'
-    },
-    {
-      target: 'malware-c2.example.com',
-      types: ['domain', 'ip'],
-      timestamp: '2024-01-18T14:22:00Z',
-      status: 'completed'
-    }
-  ]);
+    const unsubscribeProgress = addEventListener('collection_progress', upsertActiveTask);
+    const unsubscribeCompleted = addEventListener('collection_completed', (payload) => {
+      upsertActiveTask({ ...payload, status: payload?.status || 'COMPLETED' });
+      refreshCollectionTasks();
+      refreshGraph();
+      success(`Collection completed for ${payload?.target || 'target'}`);
+    });
+    const unsubscribeFailed = addEventListener('collection_failed', (payload) => {
+      upsertActiveTask({ ...payload, status: payload?.status || 'FAILED' });
+      refreshCollectionTasks();
+      refreshGraph();
+    });
 
-  const [activeTasks] = useState([
-    {
-      id: 'task-1',
-      target: 'new-threat-domain.com',
-      type: 'domain',
-      status: 'RUNNING',
-      progress: 65,
-      completed: 13,
-      total: 20
-    },
-    {
-      id: 'task-2',
-      target: 'suspicious-ip-range',
-      type: 'ip',
-      status: 'RUNNING',
-      progress: 30,
-      completed: 6,
-      total: 20
-    }
-  ]);
+    return () => {
+      unsubscribeProgress();
+      unsubscribeCompleted();
+      unsubscribeFailed();
+    };
+  }, [wsConnected, addEventListener, normalizeCollectionTask, refreshCollectionTasks, refreshGraph, success]);
+
+  useEffect(() => {
+    refreshCollectionTasks();
+    const interval = setInterval(refreshCollectionTasks, 15000);
+    return () => clearInterval(interval);
+  }, [refreshCollectionTasks]);
 
   // Graph event handlers
   const handleNodeSelect = useCallback((node) => {
@@ -323,15 +190,29 @@ function App() {
       };
 
       const result = await collectionAPI.startCollection(payload.target, payload.types, payload);
+      const taskId = result?.task_id || result?.taskId;
+      if (taskId) {
+        setActiveTasks((prev) => [
+          normalizeCollectionTask({
+            task_id: taskId,
+            target,
+            status: result?.status || 'RUNNING',
+            progress_percent: 0,
+            types
+          }),
+          ...prev.filter((task) => task.id !== taskId)
+        ]);
+      }
       success(`Collection started for ${target} (task: ${result?.task_id || result?.taskId || 'unknown'})`);
       console.log('Collection started:', { config, result });
+      refreshCollectionTasks();
 
     } catch (error) {
       showError('Failed to start collection: ' + error.message);
     } finally {
       setCollectionStarting(false);
     }
-  }, [collectionStarting, success, showError, showLoading]);
+  }, [collectionStarting, normalizeCollectionTask, refreshCollectionTasks, success, showError, showLoading]);
 
   const handleEntityAction = useCallback((action, entity) => {
     console.log('Entity action:', action, entity);
@@ -378,6 +259,15 @@ function App() {
       case 'compliance':
         setActiveView(activeView === 'compliance' ? 'graph' : 'compliance');
         break;
+      case 'investigations':
+        setActiveView(activeView === 'investigations' ? 'graph' : 'investigations');
+        break;
+      case 'operations':
+        setActiveView(activeView === 'operations' ? 'graph' : 'operations');
+        break;
+      case 'mcp':
+        setActiveView(activeView === 'mcp' ? 'graph' : 'mcp');
+        break;
       case 'home':
         setActiveView('graph');
         break;
@@ -407,29 +297,87 @@ function App() {
     updateFilters({ searchQuery: query });
   }, [success, updateFilters]);
 
-  // Update graph container size on window resize
+  // Keep graph canvas inside the exact available center panel.
   useEffect(() => {
-    const handleResize = () => {
-      const headerHeight = 80; // TopHeader height
-      const bottomHeight = bottomStatsCollapsed ? 40 : 120; // BottomStats height
-      const sidebarWidth = sidebarCollapsed ? 60 : 320; // LeftSidebar width
-      const rightSidebarWidth = rightSidebarCollapsed ? 60 : 350; // RightSidebar width
-      
+    const panel = graphPanelRef.current;
+    if (!panel) return undefined;
+
+    const updateSize = () => {
+      const rect = panel.getBoundingClientRect();
       setGraphContainerSize({
-        width: window.innerWidth - sidebarWidth - rightSidebarWidth,
-        height: window.innerHeight - headerHeight - bottomHeight
+        width: Math.max(320, Math.floor(rect.width)),
+        height: Math.max(280, Math.floor(rect.height))
       });
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [sidebarCollapsed, rightSidebarCollapsed, bottomStatsCollapsed]);
+    updateSize();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateSize) : null;
+    observer?.observe(panel);
+    window.addEventListener('resize', updateSize);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
+  }, [activeView, sidebarCollapsed, rightSidebarCollapsed]);
 
   // Backend connection monitoring
   const [backendConnected, setBackendConnected] = useState(true);
 
   useEffect(() => {
+    const apiBase = API_CONFIG.BASE_URL.replace(/\/$/, '');
+    const fetchApiJson = async (path) => {
+      const response = await fetch(`${apiBase}${path}`);
+      if (!response.ok) {
+        throw new Error(`${path} returned ${response.status}`);
+      }
+      return response.json();
+    };
+
+    const refreshServiceStatus = async () => {
+      const [databaseResult, mcpResult] = await Promise.allSettled([
+        fetchApiJson('/health/database'),
+        fetchApiJson('/mcp/servers')
+      ]);
+
+      const nextStatus = {
+        database: {
+          status: 'disconnected',
+          detail: 'Not connected',
+          title: 'Firebase Realtime Database is not reachable'
+        },
+        mcp: {
+          status: 'disconnected',
+          detail: '0/0',
+          title: 'MCP gateway is not reachable'
+        }
+      };
+
+      if (databaseResult.status === 'fulfilled') {
+        const database = databaseResult.value || {};
+        const connected = String(database.status || '').toLowerCase() === 'connected';
+        nextStatus.database = {
+          status: connected ? 'connected' : database.status || 'disconnected',
+          detail: connected ? 'Connected' : 'Not connected',
+          title: database.provider
+            ? `Database provider: ${database.provider}`
+            : 'Firebase Realtime Database status'
+        };
+      }
+
+      if (mcpResult.status === 'fulfilled') {
+        const servers = Array.isArray(mcpResult.value?.servers) ? mcpResult.value.servers : [];
+        const configuredCount = servers.filter((server) => server.configured).length;
+        nextStatus.mcp = {
+          status: configuredCount > 0 ? 'configured' : 'disconnected',
+          detail: `${configuredCount}/${servers.length}`,
+          title: `${configuredCount} connected and ${Math.max(servers.length - configuredCount, 0)} not connected MCP servers`
+        };
+      }
+
+      setServiceStatus(nextStatus);
+    };
+
     const checkBackendConnection = async () => {
       try {
         const healthBase = API_CONFIG.BASE_URL.replace(/\/api\/v1\/?$/, '');
@@ -437,13 +385,18 @@ function App() {
         if (!response.ok) throw new Error('Backend not responding');
         setBackendConnected(true);
       } catch (error) {
-        console.warn('Backend connection failed, using mock data');
+        console.warn('Backend connection failed; live data is unavailable');
         setBackendConnected(false);
       }
     };
 
-    checkBackendConnection();
-    const interval = setInterval(checkBackendConnection, 30000); // Check every 30 seconds
+    const refreshPlatformStatus = () => {
+      checkBackendConnection();
+      refreshServiceStatus();
+    };
+
+    refreshPlatformStatus();
+    const interval = setInterval(refreshPlatformStatus, 30000); // Check every 30 seconds
     
     return () => clearInterval(interval);
   }, []);
@@ -460,22 +413,12 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-cyber-black text-neon-green font-mono overflow-y-auto">
-      {/* Background Effects */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-cyber-dark via-cyber-black to-cyber-darker"></div>
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2300ff41' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}
-        ></div>
-      </div>
-
+    <div className="rv-shell h-screen text-neon-green font-mono overflow-hidden">
       {/* Backend Connection Warning */}
       {!backendConnected && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-warning-yellow text-cyber-black px-4 py-2 rounded-lg border border-warning-yellow shadow-lg font-mono text-sm">
-          ⚠️ Backend connection failed - using mock data
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-warning-yellow text-cyber-black px-4 py-2 rounded-lg border border-warning-yellow shadow-lg font-mono text-sm flex items-center gap-2">
+          <GlassIcon name="alert" size="sm" tone="red" />
+          <span>Backend connection failed - live data unavailable</span>
         </div>
       )}
 
@@ -484,20 +427,19 @@ function App() {
         variants={layoutVariants}
         initial="hidden"
         animate="visible"
-        className="h-screen flex flex-col"
+        className="h-full min-h-0 flex flex-col overflow-hidden"
       >
         {/* Top Header */}
         <TopHeader
           onSearch={handleSearch}
-          onFilterToggle={() => setShowAdvancedFilters(!showAdvancedFilters)}
           onMenuAction={handleMenuAction}
-          systemStatus={systemStatus}
-          showAdvancedFilters={showAdvancedFilters}
-          onAdvancedFiltersToggle={() => setShowAdvancedFilters(!showAdvancedFilters)}
+          activeView={activeView}
+          serviceStatus={serviceStatus}
+          backendConnected={backendConnected}
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex overflow-y-auto">
+        <div className="flex-1 min-h-0 flex overflow-hidden">
           {/* Left Sidebar */}
           <LeftSidebar
             isCollapsed={sidebarCollapsed}
@@ -509,11 +451,11 @@ function App() {
           />
 
           {/* Graph Container or Compliance Dashboard */}
-          <div className="flex-1 relative">
+          <div ref={graphPanelRef} className="flex-1 min-w-0 min-h-0 relative overflow-hidden">
             {activeView === 'graph' ? (
               <GraphCanvas
-                nodes={nodes.length > 0 ? nodes : sampleData.nodes}
-                edges={edges.length > 0 ? edges : sampleData.edges}
+                nodes={nodes}
+                edges={edges}
                 selectedNode={selectedNode}
                 selectedEdge={selectedEdge}
                 onNodeSelect={handleNodeSelect}
@@ -525,6 +467,12 @@ function App() {
                 height={graphContainerSize.height}
                 className="w-full h-full"
               />
+            ) : activeView === 'investigations' ? (
+              <InvestigationDashboard />
+            ) : activeView === 'operations' ? (
+              <IntelligenceOpsDashboard />
+            ) : activeView === 'mcp' ? (
+              <MCPPlayground />
             ) : (
               <ComplianceDashboard />
             )}
@@ -548,14 +496,16 @@ function App() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="absolute inset-0 bg-danger-red bg-opacity-80 flex items-center justify-center z-50"
+                className="absolute inset-0 bg-cyber-black bg-opacity-85 flex items-center justify-center z-50"
               >
-                <div className="text-center">
-                  <div className="text-4xl mb-4">⚠️</div>
+                <div className="text-center glass-panel-dark p-6 max-w-md mx-4">
+                  <div className="flex justify-center mb-4">
+                    <GlassIcon name="alert" size="xl" tone="red" />
+                  </div>
                   <p className="text-white font-mono">Error: {error}</p>
                   <button
                     onClick={refreshGraph}
-                    className="mt-4 px-4 py-2 bg-white text-danger-red rounded font-mono hover:bg-gray-100"
+                    className="rv-command-button mt-4 px-4 py-2 text-danger-red font-mono hover:text-white hover:border-danger-red"
                   >
                     Retry
                   </button>
@@ -572,70 +522,12 @@ function App() {
             onToggleCollapse={() => setRightSidebarCollapsed(!rightSidebarCollapsed)}
             onEntityAction={handleEntityAction}
             onRelationshipAction={handleRelationshipAction}
+            nodeCount={nodes.length}
+            edgeCount={edges.length}
           />
         </div>
 
-        {/* Bottom Stats */}
-        <BottomStats
-          isCollapsed={bottomStatsCollapsed}
-          onToggleCollapse={() => setBottomStatsCollapsed(!bottomStatsCollapsed)}
-        />
       </motion.div>
-
-      {/* Background Animation Elements */}
-      <div className="fixed inset-0 pointer-events-none -z-20">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3]
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute top-20 left-20 w-2 h-2 bg-neon-green rounded-full"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.2, 0.5, 0.2]
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          }}
-          className="absolute top-40 right-32 w-1 h-1 bg-neon-cyan rounded-full"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.1, 1],
-            opacity: [0.4, 0.7, 0.4]
-          }}
-          transition={{
-            duration: 5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
-          className="absolute bottom-32 left-40 w-1.5 h-1.5 bg-neon-purple rounded-full"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.4, 1],
-            opacity: [0.3, 0.6, 0.3]
-          }}
-          transition={{
-            duration: 3.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 0.5
-          }}
-          className="absolute bottom-20 right-20 w-2 h-2 bg-neon-magenta rounded-full"
-        />
-      </div>
     </div>
   );
 }
