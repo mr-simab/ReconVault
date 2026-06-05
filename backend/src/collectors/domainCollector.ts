@@ -55,7 +55,7 @@ export class DomainCollector extends BaseCollector {
     findings.push({
       type: "DOMAIN_REPUTATION",
       value: target,
-      riskLevel: reputationData.data.malicious ? "HIGH" : "LOW",
+      riskLevel: reputationData.source === "real" ? (reputationData.data.malicious ? "HIGH" : "LOW") : "INFO",
       metadata: reputationData,
       source: `domain:reputation:${reputationData.source}`
     });
@@ -85,7 +85,7 @@ export class DomainCollector extends BaseCollector {
       return this.realResult("whois-json", data);
     } catch (error: any) {
       logger.warn(`domain/whois failed for ${target}: ${error.message}`);
-      return this.mockResult("whois-json", { domain: target, registrar: "unknown" }, "WHOIS lookup failed");
+      return this.unavailableResult("whois-json", null, "WHOIS lookup failed");
     }
   }
 
@@ -101,7 +101,7 @@ export class DomainCollector extends BaseCollector {
       return this.realResult("node:dns", { aRecords, mxRecords, txtRecords, nsRecords });
     } catch (error: any) {
       logger.warn(`domain/dns failed for ${target}: ${error.message}`);
-      return this.mockResult("node:dns", { aRecords: [], mxRecords: [], txtRecords: [], nsRecords: [] }, "DNS lookup failed");
+      return this.unavailableResult("node:dns", { aRecords: [], mxRecords: [], txtRecords: [], nsRecords: [] }, "DNS lookup failed");
     }
   }
 
@@ -114,7 +114,7 @@ export class DomainCollector extends BaseCollector {
       return this.realResult("ssllabs", data);
     } catch (error: any) {
       logger.warn(`domain/ssl failed for ${target}: ${error.message}`);
-      return this.mockResult("ssllabs", { status: "UNKNOWN", host: target }, "SSL Labs API failed");
+      return this.unavailableResult("ssllabs", null, "SSL Labs API failed");
     }
   }
 
@@ -127,7 +127,7 @@ export class DomainCollector extends BaseCollector {
       return this.realResult("wayback-cdx", data);
     } catch (error: any) {
       logger.warn(`domain/wayback failed for ${target}: ${error.message}`);
-      return this.mockResult("wayback-cdx", [], "Wayback API failed");
+      return this.unavailableResult("wayback-cdx", [], "Wayback API failed");
     }
   }
 
@@ -161,8 +161,8 @@ export class DomainCollector extends BaseCollector {
       logger.warn(`domain/urlhaus failed for ${target}: ${error.message}`);
     }
 
-    const source = malicious.engines.length ? "real" : "mock";
+    const source = malicious.engines.length ? "real" : "unavailable";
     if (source === "real") return this.realResult("virustotal+urlhaus", malicious);
-    return this.mockResult("virustotal+urlhaus", malicious, "No reputation APIs returned data");
+    return this.unavailableResult("virustotal+urlhaus", malicious, "No reputation APIs returned data");
   }
 }

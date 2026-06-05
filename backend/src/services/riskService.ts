@@ -1,4 +1,4 @@
-import { prisma } from "../config/prisma";
+import { dataStore } from "./dataStore";
 
 const riskWeights: Record<string, number> = {
   CRITICAL: 90,
@@ -9,8 +9,8 @@ const riskWeights: Record<string, number> = {
 };
 
 export class RiskService {
-  async assessTarget(targetId: number) {
-    const entities = await prisma.entity.findMany({ where: { targetId } });
+  async assessTarget(targetId: string | number) {
+    const entities = await dataStore.entity.findMany({ where: { targetId } });
     if (!entities.length) {
       return { targetId, score: 0, level: "INFO", factors: [] };
     }

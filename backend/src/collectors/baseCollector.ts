@@ -6,9 +6,9 @@ export abstract class BaseCollector {
 
   abstract collect(target: string): Promise<CollectorResult>;
 
-  protected mockResult<T>(api: string, data: T, reason: string): ApiResult<T> {
-    logger.info(`${this.name}: using mock fallback for ${api} - ${reason}`);
-    return { data, source: "mock", api, reason };
+  protected unavailableResult<T>(api: string, data: T, reason: string): ApiResult<T> {
+    logger.info(`${this.name}: source unavailable for ${api} - ${reason}`);
+    return { data, source: "unavailable", api, reason };
   }
 
   protected realResult<T>(api: string, data: T): ApiResult<T> {

@@ -38,7 +38,7 @@ export class EmailCollector extends BaseCollector {
     findings.push({
       type: "EMAIL_BREACH",
       value: target,
-      riskLevel: breaches.data.count > 0 ? "CRITICAL" : "LOW",
+      riskLevel: breaches.source === "real" ? (breaches.data.count > 0 ? "CRITICAL" : "LOW") : "INFO",
       metadata: breaches,
       source: `email:hibp:${breaches.source}`
     });
@@ -47,7 +47,7 @@ export class EmailCollector extends BaseCollector {
     findings.push({
       type: "ACCOUNT_PRESENCE",
       value: local || target,
-      riskLevel: associated.data.matches.length > 0 ? "MEDIUM" : "INFO",
+      riskLevel: associated.source === "real" && associated.data.matches.length > 0 ? "MEDIUM" : "INFO",
       metadata: associated,
       source: `email:accounts:${associated.source}`
     });
@@ -75,20 +75,20 @@ export class EmailCollector extends BaseCollector {
   }
 
   private async lookupMx(domain: string) {
-    if (!domain) return this.mockResult("node:dns", { records: [] }, "No domain in email");
+    if (!domain) return this.unavailableResult("node:dns", { records: [] }, "No domain in email");
     try {
       const records = await dns.resolveMx(domain);
       return this.realResult("node:dns", { records });
     } catch (error: any) {
       logger.warn(`email/mx failed for ${domain}: ${error.message}`);
-      return this.mockResult("node:dns", { records: [] }, "MX lookup failed");
+      return this.unavailableResult("node:dns", { records: [] }, "MX lookup failed");
     }
   }
 
   private async lookupBreaches(email: string) {
     if (!env.hibpApiKey) {
       logger.warn("HIBP_API_KEY is missing; breach checks may be limited");
-      return this.mockResult("haveibeenpwned", { count: 0, breaches: [] }, "HIBP key missing");
+      return this.unavailableResult("haveibeenpwned", { count: 0, breaches: [] }, "HIBP key missing");
     }
     try {
       const { data } = await axios.get(`https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(email)}`, {
@@ -100,12 +100,12 @@ export class EmailCollector extends BaseCollector {
     } catch (error: any) {
       if (error.response?.status === 404) return this.realResult("haveibeenpwned", { count: 0, breaches: [] });
       logger.warn(`email/hibp failed for ${email}: ${error.message}`);
-      return this.mockResult("haveibeenpwned", { count: 0, breaches: [] }, "HIBP API failed");
+      return this.unavailableResult("haveibeenpwned", { count: 0, breaches: [] }, "HIBP API failed");
     }
   }
 
   private async lookupAssociatedAccounts(username: string) {
-    if (!username) return this.mockResult("public-apis", { matches: [] }, "No username part in email");
+    if (!username) return this.unavailableResult("public-apis", { matches: [] }, "No username part in email");
     const matches: Record<string, string>[] = [];
     let anyReal = false;
 
@@ -129,6 +129,6 @@ export class EmailCollector extends BaseCollector {
     }
 
     if (anyReal) return this.realResult("github+reddit", { matches });
-    return this.mockResult("github+reddit", { matches: [] }, "Associated account lookups returned no data");
+    return this.unavailableResult("github+reddit", { matches: [] }, "Associated account lookups returned no data");
   }
 }

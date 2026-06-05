@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { prisma } from "../config/prisma";
+import { dataStore } from "../services/dataStore";
 
 export const healthRouter = Router();
 
@@ -13,25 +13,25 @@ healthRouter.get("/healthz", async (_req, res) => {
 
 healthRouter.get("/readyz", async (_req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "ready", db: "connected", timestamp: new Date().toISOString() });
+    await dataStore.ping();
+    res.json({ status: "ready", db: "firebase-connected", timestamp: new Date().toISOString() });
   } catch {
-    res.status(503).json({ status: "not_ready", db: "disconnected", timestamp: new Date().toISOString() });
+    res.status(503).json({ status: "not_ready", db: "firebase-disconnected", timestamp: new Date().toISOString() });
   }
 });
 
 healthRouter.get("/health/detailed", async (_req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await dataStore.ping();
     res.json({
       status: "healthy",
-      services: { database: "connected", websocket: "enabled", cache: "in-memory" },
+      services: { database: "firebase-connected", websocket: "enabled", cache: "in-memory-task-status" },
       timestamp: new Date().toISOString()
     });
   } catch {
     res.status(503).json({
       status: "degraded",
-      services: { database: "disconnected", websocket: "enabled", cache: "in-memory" },
+      services: { database: "firebase-disconnected", websocket: "enabled", cache: "in-memory-task-status" },
       timestamp: new Date().toISOString()
     });
   }
@@ -39,10 +39,10 @@ healthRouter.get("/health/detailed", async (_req, res) => {
 
 healthRouter.get("/health/database", async (_req, res) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "connected" });
+    await dataStore.ping();
+    res.json({ status: "connected", provider: "firebase-realtime-database" });
   } catch {
-    res.status(503).json({ status: "disconnected" });
+    res.status(503).json({ status: "disconnected", provider: "firebase-realtime-database" });
   }
 });
 

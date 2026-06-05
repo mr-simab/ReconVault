@@ -7,10 +7,12 @@ frontend/dist/
 coverage/
 *.tsbuildinfo
 
-# Environment files (keep examples tracked)
+# Environment files (keep examples tracked only in backend/frontend)
 backend/.env
 frontend/.env
 .env
+.env.*
+.eenv*
 .env.local
 .env.development.local
 .env.test.local

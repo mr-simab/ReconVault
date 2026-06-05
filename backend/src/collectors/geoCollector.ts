@@ -53,13 +53,13 @@ export class GeoCollector extends BaseCollector {
       return this.realResult("nominatim", { lat: Number(first.lat), lon: Number(first.lon), displayName: first.display_name });
     } catch (error: any) {
       logger.warn(`geo/geocode failed for ${query}: ${error.message}`);
-      return this.mockResult("nominatim", { lat: null, lon: null, displayName: "Unknown" }, "Geocoding failed");
+      return this.unavailableResult("nominatim", { lat: null, lon: null, displayName: null }, "Geocoding failed");
     }
   }
 
   private async reverseGeocode(lat?: number, lon?: number) {
     if (typeof lat !== "number" || typeof lon !== "number") {
-      return this.mockResult("nominatim", { address: null }, "Missing coordinates for reverse geocoding");
+      return this.unavailableResult("nominatim", { address: null }, "Missing coordinates for reverse geocoding");
     }
     try {
       const { data } = await axios.get("https://nominatim.openstreetmap.org/reverse", {
@@ -70,13 +70,13 @@ export class GeoCollector extends BaseCollector {
       return this.realResult("nominatim", data);
     } catch (error: any) {
       logger.warn(`geo/reverse failed for ${lat},${lon}: ${error.message}`);
-      return this.mockResult("nominatim", { address: null }, "Reverse geocoding failed");
+      return this.unavailableResult("nominatim", { address: null }, "Reverse geocoding failed");
     }
   }
 
   private async nearbyPlaces(lat?: number, lon?: number) {
     if (typeof lat !== "number" || typeof lon !== "number") {
-      return this.mockResult("overpass", { businesses: [] }, "Missing coordinates for nearby lookup");
+      return this.unavailableResult("overpass", { businesses: [] }, "Missing coordinates for nearby lookup");
     }
     const query = `
       [out:json][timeout:20];
@@ -94,7 +94,7 @@ export class GeoCollector extends BaseCollector {
       return this.realResult("overpass", { businesses: data?.elements || [] });
     } catch (error: any) {
       logger.warn(`geo/overpass failed for ${lat},${lon}: ${error.message}`);
-      return this.mockResult("overpass", { businesses: [] }, "Overpass API failed");
+      return this.unavailableResult("overpass", { businesses: [] }, "Overpass API failed");
     }
   }
 }

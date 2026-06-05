@@ -1,10 +1,9 @@
 import crypto from "node:crypto";
-import { Prisma } from "@prisma/client";
-import { prisma } from "../config/prisma";
 import { logger } from "../config/logger";
 import { collectorsRegistry, defaultCollectors } from "../collectors";
 import { CollectionTaskState } from "../models/types";
 import { detectTargetType } from "../utils/target";
+import { dataStore } from "./dataStore";
 import { websocketHub } from "./websocketHub";
 
 const taskStore = new Map<string, CollectionTaskState>();
@@ -12,7 +11,7 @@ const cancelledTasks = new Set<string>();
 
 type StartCollectionInput = {
   target: string;
-  targetId?: number;
+  targetId?: string | number;
   collectors?: string[];
   includeDarkWeb?: boolean;
   includeMedia?: boolean;
@@ -41,7 +40,7 @@ export class CollectionService {
 
     taskStore.set(taskId, task);
 
-    await prisma.collection.create({
+    await dataStore.collection.create({
       data: {
         taskId,
         targetId: task.targetId,
@@ -52,7 +51,7 @@ export class CollectionService {
         collectorsCompleted: [],
         collectorsFailed: [],
         errors: [],
-        startTime: new Date(),
+        startTime: task.startTime,
         metadata: { target: input.target, collectorsRequested: collectorNames }
       }
     });
@@ -64,12 +63,20 @@ export class CollectionService {
     return task;
   }
 
-  getTask(taskId: string): CollectionTaskState | null {
-    return taskStore.get(taskId) || null;
+  async getTask(taskId: string): Promise<CollectionTaskState | null> {
+    const memoryTask = taskStore.get(taskId);
+    if (memoryTask) return memoryTask;
+
+    const storedTask = await dataStore.collection.findUnique({ where: { taskId } });
+    return storedTask ? this.toTaskState(storedTask) : null;
   }
 
-  getAllTasks(): CollectionTaskState[] {
-    return Array.from(taskStore.values()).sort((a, b) => b.startTime.localeCompare(a.startTime));
+  async getAllTasks(): Promise<CollectionTaskState[]> {
+    const storedTasks = await dataStore.collection.findMany({ orderBy: { startTime: "desc" }, take: 100 });
+    const tasks = new Map<string, CollectionTaskState>();
+    for (const task of storedTasks) tasks.set(task.taskId, this.toTaskState(task));
+    for (const task of taskStore.values()) tasks.set(task.taskId, task);
+    return Array.from(tasks.values()).sort((a, b) => b.startTime.localeCompare(a.startTime));
   }
 
   async cancelTask(taskId: string): Promise<boolean> {
@@ -84,11 +91,11 @@ export class CollectionService {
   }
 
   async getTaskResults(taskId: string) {
-    const task = this.getTask(taskId);
+    const task = await this.getTask(taskId);
     if (!task) return null;
 
-    const entities = await prisma.entity.findMany({ where: { targetId: task.targetId }, orderBy: { createdAt: "desc" }, take: 500 });
-    const relationships = await prisma.relationship.findMany({ orderBy: { createdAt: "desc" }, take: 500 });
+    const entities = await dataStore.entity.findMany({ where: { targetId: task.targetId }, orderBy: { createdAt: "desc" }, take: 500 });
+    const relationships = await dataStore.relationship.findMany({ orderBy: { createdAt: "desc" }, take: 500 });
     return { task, entities, relationships };
   }
 
@@ -112,12 +119,12 @@ export class CollectionService {
         const result = await collector.collect(task.target);
         const createdEntities = await Promise.all(
           result.findings.map((f) =>
-            prisma.entity.create({
+            dataStore.entity.create({
               data: {
                 type: f.type,
                 value: f.value,
                 riskLevel: f.riskLevel || "INFO",
-                metadata: (f.metadata || {}) as Prisma.InputJsonValue,
+                metadata: f.metadata || {},
                 source: f.source,
                 targetId: task.targetId
               }
@@ -128,12 +135,12 @@ export class CollectionService {
 
         const createdRelationships = await Promise.all(
           result.relationships.map((r) =>
-            prisma.relationship.create({
+            dataStore.relationship.create({
               data: {
                 source: r.source,
                 target: r.target,
                 relationshipType: r.relationshipType,
-                metadata: (r.metadata || {}) as Prisma.InputJsonValue
+                metadata: r.metadata || {}
               }
             })
           )
@@ -165,7 +172,7 @@ export class CollectionService {
   }
 
   private async persistTask(task: CollectionTaskState): Promise<void> {
-    await prisma.collection.update({
+    await dataStore.collection.update({
       where: { taskId: task.taskId },
       data: {
         status: task.status,
@@ -187,15 +194,33 @@ export class CollectionService {
     return selected.filter((name) => collectorsRegistry[name]);
   }
 
-  private async resolveTarget(target: string, targetId?: number) {
+  private async resolveTarget(target: string, targetId?: string | number) {
     if (targetId) {
-      const existing = await prisma.target.findUnique({ where: { id: targetId } });
+      const existing = await dataStore.target.findUnique({ where: { id: targetId } });
       if (existing) return existing;
     }
     const type = detectTargetType(target);
-    const existingByName = await prisma.target.findUnique({ where: { name: target } });
+    const existingByName = await dataStore.target.findUnique({ where: { name: target } });
     if (existingByName) return existingByName;
-    return prisma.target.create({ data: { name: target, type, priority: "medium", status: "active" } });
+    return dataStore.target.create({ data: { name: target, type, priority: "medium", status: "active" } });
+  }
+
+  private toTaskState(record: any): CollectionTaskState {
+    return {
+      taskId: record.taskId,
+      targetId: record.targetId,
+      target: record.metadata?.target || record.target || "",
+      status: record.status,
+      progress: Number(record.progress || 0),
+      entitiesCollected: Number(record.entitiesCollected || 0),
+      relationshipsCollected: Number(record.relationshipsCollected || 0),
+      collectorsCompleted: Array.isArray(record.collectorsCompleted) ? record.collectorsCompleted : [],
+      collectorsFailed: Array.isArray(record.collectorsFailed) ? record.collectorsFailed : [],
+      errors: Array.isArray(record.errors) ? record.errors : [],
+      startTime: typeof record.startTime === "string" ? record.startTime : new Date(record.startTime).toISOString(),
+      endTime: record.endTime ? (typeof record.endTime === "string" ? record.endTime : new Date(record.endTime).toISOString()) : undefined,
+      collectorsRequested: Array.isArray(record.metadata?.collectorsRequested) ? record.metadata.collectorsRequested : []
+    };
   }
 }
 

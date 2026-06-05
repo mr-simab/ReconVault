@@ -42,7 +42,7 @@ export class MediaCollector extends BaseCollector {
       return this.realResult("exifr", { target, metadataExtracted: true, metadata });
     } catch (error: any) {
       logger.warn(`media/exif failed for ${target}: ${error.message}`);
-      return this.mockResult("exifr", { target, metadataExtracted: false }, "EXIF extraction failed");
+      return this.unavailableResult("exifr", { target, metadataExtracted: false }, "EXIF extraction failed");
     }
   }
 
@@ -64,14 +64,14 @@ export class MediaCollector extends BaseCollector {
       return this.realResult("ocr.space", { extracted: true, text, raw: data });
     } catch (error: any) {
       logger.warn(`media/ocr failed for ${target}: ${error.message}`);
-      return this.mockResult("ocr.space", { extracted: false, text: "" }, "OCR API failed");
+      return this.unavailableResult("ocr.space", { extracted: false, text: null }, "OCR API failed");
     }
   }
 
   private async detectFaces(target: string) {
     if (!env.faceppApiKey || !env.faceppApiSecret) {
       logger.warn("FACEPP_API_KEY/FACEPP_API_SECRET missing; face detection fallback enabled");
-      return this.mockResult("face++", { detected: false, faceCount: 0 }, "Face++ credentials missing");
+      return this.unavailableResult("face++", { detected: false, faceCount: null }, "Face++ credentials missing");
     }
 
     const form = new FormData();
@@ -89,7 +89,7 @@ export class MediaCollector extends BaseCollector {
       return this.realResult("face++", { detected: true, faceCount: faces.length, faces });
     } catch (error: any) {
       logger.warn(`media/face detection failed for ${target}: ${error.message}`);
-      return this.mockResult("face++", { detected: false, faceCount: 0 }, "Face detection API failed");
+      return this.unavailableResult("face++", { detected: false, faceCount: null }, "Face detection API failed");
     }
   }
 }

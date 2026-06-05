@@ -59,8 +59,10 @@ export class SocialCollector extends BaseCollector {
         timeout: 10000
       });
       return this.realResult("github", { exists: true, url: data?.html_url, followers: data?.followers || 0, repos: data?.public_repos || 0 });
-    } catch {
-      return this.realResult("github", { exists: false, url: null });
+    } catch (error: any) {
+      if (error.response?.status === 404) return this.realResult("github", { exists: false, url: null });
+      logger.warn(`social/github lookup failed for ${username}: ${error.message}`);
+      return this.unavailableResult("github", { exists: null, url: null }, "GitHub lookup failed");
     }
   }
 
@@ -69,8 +71,10 @@ export class SocialCollector extends BaseCollector {
       const { data } = await axios.get(`https://www.reddit.com/user/${username}/about.json`, { timeout: 10000 });
       const profile = data?.data || {};
       return this.realResult("reddit", { exists: true, url: `https://www.reddit.com/user/${username}`, karma: profile.total_karma || 0 });
-    } catch {
-      return this.realResult("reddit", { exists: false, url: null });
+    } catch (error: any) {
+      if (error.response?.status === 404) return this.realResult("reddit", { exists: false, url: null });
+      logger.warn(`social/reddit lookup failed for ${username}: ${error.message}`);
+      return this.unavailableResult("reddit", { exists: null, url: null }, "Reddit lookup failed");
     }
   }
 
@@ -92,7 +96,7 @@ export class SocialCollector extends BaseCollector {
       return this.realResult("twitter-public-profile", { exists: false, username });
     } catch (error: any) {
       logger.warn(`social/twitter lookup failed for ${username}: ${error.message}`);
-      return this.mockResult("twitter-public-profile", { exists: "unknown", username }, "Public Twitter lookup failed");
+      return this.unavailableResult("twitter-public-profile", { exists: null, username }, "Public Twitter lookup failed");
     }
   }
 }

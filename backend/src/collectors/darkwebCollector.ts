@@ -41,7 +41,7 @@ export class DarkwebCollector extends BaseCollector {
       return this.realResult("ahmia", { target, checked: true, mentions });
     } catch (error: any) {
       logger.warn(`darkweb/ahmia failed for ${target}: ${error.message}`);
-      return this.mockResult("ahmia", { target, checked: false, mentions: [] }, "Darkweb search failed");
+      return this.unavailableResult("ahmia", { target, checked: false, mentions: [] }, "Darkweb search failed");
     }
   }
 }

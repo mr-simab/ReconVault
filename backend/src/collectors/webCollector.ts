@@ -81,7 +81,7 @@ export class WebCollector extends BaseCollector {
       return this.realResult("axios+cheerio", { title, description, links });
     } catch (error: any) {
       logger.warn(`web/scrape failed for ${url}: ${error.message}`);
-      return this.mockResult("axios+cheerio", { title: "Unknown", description: "", links: [] }, "Scraping failed");
+      return this.unavailableResult("axios+cheerio", { title: null, description: null, links: [] }, "Scraping failed");
     }
   }
 
@@ -99,7 +99,7 @@ export class WebCollector extends BaseCollector {
       return this.realResult("puppeteer", data);
     } catch (error: any) {
       logger.warn(`web/dynamic failed for ${url}: ${error.message}`);
-      return this.mockResult("puppeteer", { title: "Unknown", textSample: "", scriptCount: 0 }, "Dynamic scrape failed");
+      return this.unavailableResult("puppeteer", { title: null, textSample: null, scriptCount: null }, "Dynamic scrape failed");
     }
   }
 
@@ -115,7 +115,7 @@ export class WebCollector extends BaseCollector {
       return this.realResult("crt.sh", { subdomains: list });
     } catch (error: any) {
       logger.warn(`web/subdomains failed for ${domain}: ${error.message}`);
-      return this.mockResult("crt.sh", { subdomains: [] }, "Subdomain API failed");
+      return this.unavailableResult("crt.sh", { subdomains: [] }, "Subdomain API failed");
     }
   }
 
@@ -141,7 +141,7 @@ export class WebCollector extends BaseCollector {
       return this.realResult("http-headers", detected);
     } catch (error: any) {
       logger.warn(`web/header-tech failed for ${domain}: ${error.message}`);
-      return this.mockResult("builtwith/http-headers", { server: "unknown", poweredBy: "unknown" }, "Tech detection failed");
+      return this.unavailableResult("builtwith/http-headers", { server: null, poweredBy: null }, "Tech detection failed");
     }
   }
 }

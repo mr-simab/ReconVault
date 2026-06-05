@@ -36,7 +36,7 @@ export class IpCollector extends BaseCollector {
     findings.push({
       type: "IP_REPUTATION",
       value: target,
-      riskLevel: reputation.data.abuseConfidence > 60 ? "HIGH" : "LOW",
+      riskLevel: reputation.source === "real" ? (reputation.data.abuseConfidence > 60 ? "HIGH" : "LOW") : "INFO",
       metadata: reputation,
       source: `ip:reputation:${reputation.source}`
     });
@@ -54,7 +54,7 @@ export class IpCollector extends BaseCollector {
     findings.push({
       type: "IP_VPN_PROXY",
       value: target,
-      riskLevel: vpnProxy.data.proxy ? "MEDIUM" : "LOW",
+      riskLevel: vpnProxy.source === "real" ? (vpnProxy.data.proxy ? "MEDIUM" : "LOW") : "INFO",
       metadata: vpnProxy,
       source: `ip:vpn:${vpnProxy.source}`
     });
@@ -63,7 +63,7 @@ export class IpCollector extends BaseCollector {
     findings.push({
       type: "IP_PORTS",
       value: target,
-      riskLevel: Array.isArray(ports.data.ports) && ports.data.ports.length > 0 ? "MEDIUM" : "LOW",
+      riskLevel: ports.source === "real" && Array.isArray(ports.data.ports) && ports.data.ports.length > 0 ? "MEDIUM" : "INFO",
       metadata: ports,
       source: `ip:ports:${ports.source}`
     });
@@ -78,7 +78,7 @@ export class IpCollector extends BaseCollector {
       throw new Error("ip-api returned non-success");
     } catch (error: any) {
       logger.warn(`ip/geolocation failed for ${ip}: ${error.message}`);
-      return this.mockResult("ip-api.com", { query: ip, country: "Unknown", status: "fail" }, "Geolocation API failed");
+      return this.unavailableResult("ip-api.com", null, "Geolocation API failed");
     }
   }
 
@@ -88,7 +88,7 @@ export class IpCollector extends BaseCollector {
       return this.realResult("node:dns", { hostnames });
     } catch (error: any) {
       logger.warn(`ip/reverse-dns failed for ${ip}: ${error.message}`);
-      return this.mockResult("node:dns", { hostnames: [] }, "Reverse DNS failed");
+      return this.unavailableResult("node:dns", { hostnames: [] }, "Reverse DNS failed");
     }
   }
 
@@ -128,7 +128,7 @@ export class IpCollector extends BaseCollector {
     }
 
     if (engines.length) return this.realResult("abuseipdb+virustotal", { abuseConfidence, engines });
-    return this.mockResult("abuseipdb+virustotal", { abuseConfidence, engines }, "No reputation data available");
+    return this.unavailableResult("abuseipdb+virustotal", { abuseConfidence, engines }, "No reputation data available");
   }
 
   private async lookupWhois(ip: string) {
@@ -137,7 +137,7 @@ export class IpCollector extends BaseCollector {
       return this.realResult("whois-json", data);
     } catch (error: any) {
       logger.warn(`ip/whois failed for ${ip}: ${error.message}`);
-      return this.mockResult("whois-json", { ip, org: "unknown" }, "WHOIS failed");
+      return this.unavailableResult("whois-json", null, "WHOIS failed");
     }
   }
 
@@ -148,14 +148,14 @@ export class IpCollector extends BaseCollector {
       return this.realResult("ipapi.co", { proxy, raw: data });
     } catch (error: any) {
       logger.warn(`ip/vpn-proxy failed for ${ip}: ${error.message}`);
-      return this.mockResult("ipapi.co", { proxy: false }, "VPN/proxy detection failed");
+      return this.unavailableResult("ipapi.co", { proxy: false }, "VPN/proxy detection failed");
     }
   }
 
   private async lookupShodan(ip: string) {
     if (!env.shodanApiKey) {
       logger.warn("SHODAN_API_KEY is missing; skipping online port scan lookup");
-      return this.mockResult("shodan", { ports: [] }, "Shodan key missing");
+      return this.unavailableResult("shodan", { ports: [] }, "Shodan key missing");
     }
     try {
       const { data } = await axios.get(`https://api.shodan.io/shodan/host/${ip}`, {
@@ -165,7 +165,7 @@ export class IpCollector extends BaseCollector {
       return this.realResult("shodan", { ports: data?.ports || [], tags: data?.tags || [] });
     } catch (error: any) {
       logger.warn(`ip/shodan failed for ${ip}: ${error.message}`);
-      return this.mockResult("shodan", { ports: [] }, "Shodan API failed");
+      return this.unavailableResult("shodan", { ports: [] }, "Shodan API failed");
     }
   }
 }

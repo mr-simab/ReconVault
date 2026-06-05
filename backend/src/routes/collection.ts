@@ -44,22 +44,26 @@ collectionRouter.post("/start", async (req, res, next) => {
   }
 });
 
-collectionRouter.get("/tasks/:taskId", (req, res) => {
-  const task = collectionService.getTask(req.params.taskId);
-  if (!task) return res.status(404).json({ status: "error", error: "Task not found" });
-  res.json({
-    task_id: task.taskId,
-    target: task.target,
-    status: task.status,
-    progress_percent: task.progress,
-    collectors_completed: task.collectorsCompleted,
-    collectors_failed: task.collectorsFailed,
-    entities_collected: task.entitiesCollected,
-    relationships_collected: task.relationshipsCollected,
-    errors: task.errors,
-    start_time: task.startTime,
-    end_time: task.endTime
-  });
+collectionRouter.get("/tasks/:taskId", async (req, res, next) => {
+  try {
+    const task = await collectionService.getTask(req.params.taskId);
+    if (!task) return res.status(404).json({ status: "error", error: "Task not found" });
+    return res.json({
+      task_id: task.taskId,
+      target: task.target,
+      status: task.status,
+      progress_percent: task.progress,
+      collectors_completed: task.collectorsCompleted,
+      collectors_failed: task.collectorsFailed,
+      entities_collected: task.entitiesCollected,
+      relationships_collected: task.relationshipsCollected,
+      errors: task.errors,
+      start_time: task.startTime,
+      end_time: task.endTime
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 collectionRouter.get("/results/:taskId", async (req, res, next) => {
@@ -94,14 +98,22 @@ collectionRouter.post("/tasks/:taskId/cancel", async (req, res, next) => {
   }
 });
 
-collectionRouter.get("/history", (_req, res) => {
-  const tasks = collectionService.getAllTasks();
-  res.json({ tasks, total: tasks.length });
+collectionRouter.get("/history", async (_req, res, next) => {
+  try {
+    const tasks = await collectionService.getAllTasks();
+    res.json({ tasks, total: tasks.length });
+  } catch (error) {
+    next(error);
+  }
 });
 
-collectionRouter.get("/tasks", (_req, res) => {
-  const tasks = collectionService.getAllTasks();
-  res.json({ tasks, total: tasks.length });
+collectionRouter.get("/tasks", async (_req, res, next) => {
+  try {
+    const tasks = await collectionService.getAllTasks();
+    res.json({ tasks, total: tasks.length });
+  } catch (error) {
+    next(error);
+  }
 });
 
 collectionRouter.get("/sources", (_req, res) => {

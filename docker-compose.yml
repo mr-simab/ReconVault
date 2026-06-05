@@ -9,23 +9,36 @@ services:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=${PORT:-8000}
       - HOST=${HOST:-0.0.0.0}
-      - DATABASE_URL=${DATABASE_URL:-postgresql://reconvault_user:changeme@postgres:5432/reconvault}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL:-}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL:-}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY:-}
+      - FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_SERVICE_ACCOUNT_JSON:-}
       - HIBP_API_KEY=${HIBP_API_KEY:-}
       - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY:-}
       - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY:-}
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - SHODAN_API_KEY=${SHODAN_API_KEY:-}
+      - SECURITYTRAILS_API_KEY=${SECURITYTRAILS_API_KEY:-}
       - BUILTWITH_API_KEY=${BUILTWITH_API_KEY:-}
       - WAPPALYZER_API_KEY=${WAPPALYZER_API_KEY:-}
       - GOOGLE_VISION_API_KEY=${GOOGLE_VISION_API_KEY:-}
       - OCR_SPACE_API_KEY=${OCR_SPACE_API_KEY:-}
       - FACEPP_API_KEY=${FACEPP_API_KEY:-}
       - FACEPP_API_SECRET=${FACEPP_API_SECRET:-}
+      - LLM_PROVIDER=${LLM_PROVIDER:-}
+      - LLM_MODEL=${LLM_MODEL:-}
+      - LLM_REQUEST_TIMEOUT_MS=${LLM_REQUEST_TIMEOUT_MS:-45000}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://localhost:11434}
+      - MCP_GATEWAY_SERVERS_JSON=${MCP_GATEWAY_SERVERS_JSON:-}
+      - EXECUTION_MAX_PARALLEL_STEPS=${EXECUTION_MAX_PARALLEL_STEPS:-4}
     ports:
       - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - reconvault-network
     healthcheck:
@@ -63,27 +76,6 @@ services:
       retries: 3
       start_period: 60s
 
-  postgres:
-    image: postgres:15-alpine
-    container_name: reconvault-postgres
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB:-reconvault}
-      - POSTGRES_USER=${POSTGRES_USER:-reconvault_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/postgres:/docker-entrypoint-initdb.d
-    ports:
-      - "5432:5432"
-    networks:
-      - reconvault-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U reconvault_user -d reconvault"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   nginx:
     image: nginx:1.25-alpine
     container_name: reconvault-nginx
@@ -112,8 +104,6 @@ networks:
 
 volumes:
   frontend_node_modules:
-    driver: local
-  postgres_data:
     driver: local
   nginx_logs:
     driver: local
