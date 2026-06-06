@@ -288,11 +288,22 @@ export class PlanningService {
     const asksForWeb = requestMentions(request, ["web", "http", "website", "technology", "nuclei", "crawl"]);
     const asksForNetwork = requestMentions(request, ["port", "service", "network", "nmap", "scan"]);
     const asksForIdentity = requestMentions(request, ["person", "username", "email", "social", "account"]);
+    const asksForDns = requestMentions(request, ["dns", "subdomain", "zone", "domain"]);
+    const asksForArchive = requestMentions(request, ["archive", "wayback", "historical", "url"]);
+    const asksForContent = requestMentions(request, ["directory", "content", "endpoint", "parameter", "fuzz", "wordlist"]);
+    const asksForCloud = requestMentions(request, ["cloud", "aws", "azure", "gcp", "container", "docker", "kubernetes", "k8s", "iac", "terraform"]);
 
-    if ((type === "DOMAIN" || type === "URL") && asksForDeepRecon) ["subfinder", "httpx"].forEach((name) => selected.add(name));
-    if ((type === "DOMAIN" || type === "URL") && asksForWeb) ["whatweb", "nuclei"].forEach((name) => selected.add(name));
-    if ((type === "DOMAIN" || type === "IP") && asksForNetwork) ["dnsx", "nmap"].forEach((name) => selected.add(name));
-    if ((type === "EMAIL" || type === "USERNAME" || asksForIdentity) && asksForDeepRecon) ["theharvester", "sherlock", "holehe"].forEach((name) => selected.add(name));
+    if ((type === "DOMAIN" || type === "URL") && asksForDeepRecon) ["subfinder", "httpx", "amass", "assetfinder"].forEach((name) => selected.add(name));
+    if ((type === "DOMAIN" || type === "URL") && asksForDns) ["dnsx", "dnsrecon", "fierce", "dnsenum"].forEach((name) => selected.add(name));
+    if ((type === "DOMAIN" || type === "URL") && asksForArchive) ["gau", "waymore", "waybackurls", "hakrawler"].forEach((name) => selected.add(name));
+    if ((type === "DOMAIN" || type === "URL") && asksForWeb) ["whatweb", "wafw00f", "nuclei", "nikto", "sslscan"].forEach((name) => selected.add(name));
+    if ((type === "DOMAIN" || type === "URL") && asksForContent) ["katana", "gobuster", "ffuf", "feroxbuster", "dirsearch", "arjun", "paramspider"].forEach((name) => selected.add(name));
+    if ((type === "DOMAIN" || type === "IP") && asksForNetwork) ["dnsx", "nmap", "naabu", "sslscan", "rustscan"].forEach((name) => selected.add(name));
+    if ((type === "EMAIL" || type === "USERNAME" || asksForIdentity) && asksForDeepRecon) ["theharvester", "sherlock", "holehe", "social_analyzer", "spiderfoot"].forEach((name) => selected.add(name));
+    if (asksForCloud) ["trivy", "checkov", "terrascan", "prowler", "kube_bench", "kube_hunter"].forEach((name) => selected.add(name));
+    if (requestMentions(request, ["wordpress", "wp", "cms"])) selected.add("wpscan");
+    if (requestMentions(request, ["xss", "reflection"])) selected.add("dalfox");
+    if (requestMentions(request, ["zap", "baseline"])) selected.add("zap_baseline");
 
     return Array.from(selected).filter((name) => Boolean(toolRegistry.get(name)));
   }

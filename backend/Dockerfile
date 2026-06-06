@@ -7,6 +7,7 @@ RUN npm install
 
 COPY tsconfig.json ./
 COPY src ./src
+COPY config ./config
 
 RUN npm run build
 
@@ -19,6 +20,7 @@ COPY --from=build /app/package*.json ./
 RUN npm install --omit=dev
 
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/config ./config
 
 EXPOSE 8000
 CMD ["node", "dist/index.js"]

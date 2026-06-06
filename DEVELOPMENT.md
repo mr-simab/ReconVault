@@ -170,12 +170,19 @@ Supported providers are `openai`, `anthropic`, `gemini`, `openrouter`, and `olla
 Optional MCP configuration:
 
 ```env
-MCP_GATEWAY_SERVERS_JSON={"Recon MCP":{"baseUrl":"http://127.0.0.1:5000","endpointTemplate":"/mcp/tools/recon/{tool}"}}
+MCP_GATEWAY_CONFIG_FILE=config/mcp.servers.json
+MCP_GATEWAY_SERVERS_JSON=
 ```
+
+Copy `backend/config/mcp.servers.example.json` to `backend/config/mcp.servers.json` and adjust the local or remote MCP URLs. `MCP_GATEWAY_SERVERS_JSON` can still be used as an inline override.
 
 The AI planner never executes tools. It creates plans; the execution controller validates and runs approved registry tools.
 
+Recon intelligence endpoints are available at `/api/v1/recon/*`. They classify targets, score registered tools, suggest passive-first and approval-gated paths, and return safe planner metadata before a workflow is generated or executed.
+
 The header MCP chip opens the MCP Playground. The playground reads `/api/v1/mcp/servers`, shows total configured and unconfigured MCP sources, and lists the tools exposed by each source.
+
+Local Python MCP server setup and tool requirements are documented in `local-mcp-server/MCP_SETUP.md`.
 
 ## Frontend Workspace Views
 
@@ -188,7 +195,7 @@ Brand -> Backend live -> DB status -> MCP status/playground -> Search -> Graph |
 Center workspace views:
 
 - `Graph`: live force graph using Firebase-backed entities and relationships.
-- `Investigation`: AI planning, dry-run execution, workflow runs, evidence, and analyst reports.
+- `Investigation`: target profiling, AI planning, dry-run execution, workflow runs, evidence, and analyst reports.
 - `Intelligence Ops`: cases, timeline, IOC database, reports, audit logs, RBAC roles, and queue status.
 - `Compliance`: policy and violation status.
 - `MCP`: source list, connection status, connected/not connected counts, and tool inventory.
@@ -205,7 +212,7 @@ Phase 3 adds the investigation operations surface on top of the v2 orchestration
 - `reportExportService.ts` and `/api/v1/reports/investigation/:id` generate investigation reports in JSON, Markdown, HTML, and PDF-ready HTML.
 - `auditService.ts` and `/api/v1/audit` track operational actions for review.
 - `rbacService.ts` and `/api/v1/rbac/roles` provide the role and permission foundation. During development, requests without `X-ReconVault-Role` are treated as Admin; production falls back to Viewer.
-- `queueService.ts` and `/api/v1/queue` persist queued job state for future background workers.
+- `queueService.ts` and `/api/v1/queue` persist queued job state for planned background workers.
 
 The frontend exposes this layer through `frontend/src/components/Dashboard/IntelligenceOpsDashboard.jsx`.
 
@@ -258,9 +265,10 @@ Playwright specs are present under `frontend/e2e`, but they should be reviewed a
 - Storage is Firebase Realtime Database through `src/services/dataStore.ts`.
 - Prisma and PostgreSQL have been removed.
 - Neo4j and Redis are not active services. Compatibility health routes report them as removed.
-- Collectors no longer return mock intelligence. Failed sources are marked as `source: "unavailable"` with a reason.
+- Collectors return live-source findings only. Failed sources are marked as `source: "unavailable"` with a reason.
 - WebSocket task progress is still in-memory for active live updates, while collection records are persisted in Firebase.
 - v2 investigations, plans, evidence, and execution records are persisted in Firebase when credentials are configured.
 - Phase 3 cases, timeline events, IOCs, audit logs, roles, users, reports, and queue jobs use Firebase-backed service models.
 - Local degraded mode returns empty `metadata.degraded` payloads for read-only graph, collection task, and operations list endpoints so the UI can load without console-spamming `503` responses.
-- MCP tools are metadata-only until matching servers are configured through `MCP_GATEWAY_SERVERS_JSON`.
+- MCP tools are metadata-only until matching servers are configured through `MCP_GATEWAY_CONFIG_FILE` or `MCP_GATEWAY_SERVERS_JSON`.
+- Recon intelligence is planner/recommender logic only. Tool execution remains isolated behind approved backend services and configured adapters.

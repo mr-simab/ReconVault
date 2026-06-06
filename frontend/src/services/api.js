@@ -642,6 +642,28 @@ export const aiPlanningAPI = {
   }
 };
 
+export const reconIntelligenceAPI = {
+  getMatrix: async () => {
+    const response = await apiClient.get('/recon/matrix');
+    return response.data;
+  },
+
+  analyzeTarget: async (payload) => {
+    const response = await apiClient.post('/recon/profile', payload);
+    return response.data;
+  },
+
+  optimizeTool: async (payload) => {
+    const response = await apiClient.post('/recon/optimize', payload);
+    return response.data;
+  },
+
+  createWorkflow: async (payload) => {
+    const response = await apiClient.post('/recon/workflow', payload);
+    return response.data;
+  }
+};
+
 export const investigationAPI = {
   createInvestigation: async (payload) => {
     const response = await apiClient.post('/investigations', payload);

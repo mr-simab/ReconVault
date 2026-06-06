@@ -19,6 +19,13 @@ frontend/.env
 .env.production.local
 !backend/.env.example
 !frontend/.env.example
+docs/*.md
+
+backend/config/mcp.servers.json
+local-mcp-server/.venv/
+local-mcp-server/output/
+local-mcp-server/reports/
+local-mcp-server/*.log
 
 # Logs
 *.log

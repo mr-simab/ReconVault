@@ -1,0 +1,22 @@
+{
+  "Recon MCP": {
+    "baseUrl": "http://KALI_MCP_HOST:9101",
+    "endpointTemplate": "/mcp/tools/recon/{tool}"
+  },
+  "Network MCP": {
+    "baseUrl": "http://KALI_MCP_HOST:9101",
+    "endpointTemplate": "/mcp/tools/network/{tool}"
+  },
+  "Web MCP": {
+    "baseUrl": "http://KALI_MCP_HOST:9101",
+    "endpointTemplate": "/mcp/tools/web/{tool}"
+  },
+  "OSINT MCP": {
+    "baseUrl": "http://KALI_MCP_HOST:9101",
+    "endpointTemplate": "/mcp/tools/osint/{tool}"
+  },
+  "Cloud MCP": {
+    "baseUrl": "http://KALI_MCP_HOST:9101",
+    "endpointTemplate": "/mcp/tools/cloud/{tool}"
+  }
+}

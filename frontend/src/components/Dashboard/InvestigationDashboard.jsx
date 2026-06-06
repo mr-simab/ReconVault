@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { aiPlanningAPI, investigationAPI, mcpAPI, toolsAPI, workflowAPI } from '../../services/api';
+import { aiPlanningAPI, investigationAPI, mcpAPI, reconIntelligenceAPI, toolsAPI, workflowAPI } from '../../services/api';
 
 const statusClass = {
   COMPLETED: 'text-safe-green border-safe-green',
@@ -46,6 +46,8 @@ const InvestigationDashboard = () => {
   const [executions, setExecutions] = useState([]);
   const [currentPlan, setCurrentPlan] = useState(null);
   const [workflowResult, setWorkflowResult] = useState(null);
+  const [reconProfile, setReconProfile] = useState(null);
+  const [reconWorkflow, setReconWorkflow] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -61,6 +63,12 @@ const InvestigationDashboard = () => {
       .map((item) => item.trim())
       .filter(Boolean)
   ), [approvedTools]);
+
+  const reconDepth = useMemo(() => {
+    if (maxIterations > 2) return 'deep';
+    if (maxIterations > 1) return 'standard';
+    return 'surface';
+  }, [maxIterations]);
 
   const loadOverview = useCallback(async () => {
     const [providerResult, toolsResult, mcpResult] = await Promise.allSettled([
@@ -117,6 +125,33 @@ const InvestigationDashboard = () => {
       setMessage(response.plan?.plannerMode === 'deterministic_fallback'
         ? 'Plan generated with deterministic fallback.'
         : 'Plan generated with configured provider.');
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleReconProfile = async () => {
+    if (!target.trim()) {
+      setMessage('Target is required.');
+      return;
+    }
+    setBusy(true);
+    setMessage('');
+    try {
+      const payload = {
+        target: target.trim(),
+        objective: request,
+        depth: reconDepth
+      };
+      const [profileResponse, workflowResponse] = await Promise.all([
+        reconIntelligenceAPI.analyzeTarget(payload),
+        reconIntelligenceAPI.createWorkflow(payload)
+      ]);
+      setReconProfile(profileResponse);
+      setReconWorkflow(workflowResponse.workflow);
+      setMessage('Recon profile generated.');
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -292,6 +327,9 @@ const InvestigationDashboard = () => {
                 </div>
               )}
               <div className="grid gap-2">
+                <button disabled={busy} onClick={handleReconProfile} className="btn-cyber-secondary w-full disabled:opacity-50">
+                  Profile Target
+                </button>
                 <button disabled={busy} onClick={handlePlanOnly} className="btn-cyber-secondary w-full disabled:opacity-50">
                   Generate Plan
                 </button>
@@ -302,6 +340,65 @@ const InvestigationDashboard = () => {
                   Run Workflow
                 </button>
               </div>
+              {reconProfile && (
+                <div className="rounded border border-cyber-border bg-cyber-black/50 p-3">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm text-neon-green">{reconProfile.profile?.targetType || 'UNKNOWN'}</div>
+                      <div className="text-[11px] uppercase text-cyber-gray">{reconProfile.profile?.objective || 'balanced'}</div>
+                    </div>
+                    <span className="shrink-0 rounded border border-neon-cyan/60 px-2 py-1 text-[10px] text-neon-cyan">
+                      {Math.round((reconProfile.profile?.confidence || 0) * 100)}% confidence
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+                    <div className="rounded border border-cyber-border px-2 py-2">
+                      <div className="text-neon-green">{reconProfile.passiveFirstTools?.length || 0}</div>
+                      <div className="text-cyber-gray">passive</div>
+                    </div>
+                    <div className="rounded border border-cyber-border px-2 py-2">
+                      <div className="text-warning-yellow">{reconProfile.approvalRequiredTools?.length || 0}</div>
+                      <div className="text-cyber-gray">approval</div>
+                    </div>
+                    <div className="rounded border border-cyber-border px-2 py-2">
+                      <div className="text-neon-cyan">{reconWorkflow?.phases?.length || 0}</div>
+                      <div className="text-cyber-gray">phases</div>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <div className="mb-2 text-[11px] text-cyber-gray">Recommended tools</div>
+                    <div className="flex flex-wrap gap-2">
+                      {(reconProfile.recommendations || []).slice(0, 8).map((tool) => (
+                        <button
+                          key={tool.name}
+                          type="button"
+                          onClick={() => {
+                            const next = new Set(approvedToolList);
+                            next.has(tool.name) ? next.delete(tool.name) : next.add(tool.name);
+                            setApprovedTools(Array.from(next).join(','));
+                          }}
+                          className={`max-w-full rounded border px-2 py-1 text-[11px] ${tool.requiresApproval ? 'border-warning-yellow/70 text-warning-yellow' : 'border-neon-green/60 text-neon-green'}`}
+                          title={tool.reasons?.join(', ') || tool.source}
+                        >
+                          <span className="inline-block max-w-[120px] truncate align-bottom">{tool.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {reconWorkflow?.phases?.length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      {reconWorkflow.phases.slice(0, 5).map((phase) => (
+                        <div key={phase.id} className="flex items-center justify-between gap-2 text-[11px]">
+                          <span className="truncate text-cyber-gray">{phase.name}</span>
+                          <span className={phase.approvalRequired ? 'text-warning-yellow' : 'text-neon-green'}>
+                            {phase.tools?.length || 0} tools
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </section>
 

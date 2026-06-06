@@ -50,6 +50,7 @@ export const env = {
   geminiApiKey: process.env.GEMINI_API_KEY || "",
   openrouterApiKey: process.env.OPENROUTER_API_KEY || "",
   ollamaBaseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
+  mcpGatewayConfigFile: process.env.MCP_GATEWAY_CONFIG_FILE || "",
   mcpGatewayServersJson: process.env.MCP_GATEWAY_SERVERS_JSON || "",
   executionMaxParallelSteps: Number(process.env.EXECUTION_MAX_PARALLEL_STEPS || 4)
 };

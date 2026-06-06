@@ -1,4 +1,6 @@
 import axios from "axios";
+import fs from "node:fs";
+import path from "node:path";
 import { env } from "../config/env";
 import { ToolCapability } from "../models/types";
 import { toolRegistry } from "./toolRegistry";
@@ -11,15 +13,46 @@ type McpServerConfig = {
 
 type McpServerMap = Record<string, McpServerConfig>;
 
-function parseServerConfig(): McpServerMap {
+function readConfigFile(): McpServerMap {
+  if (!env.mcpGatewayConfigFile) return {};
+
+  const configuredPath = env.mcpGatewayConfigFile;
+  const candidates = path.isAbsolute(configuredPath)
+    ? [configuredPath]
+    : [
+        path.resolve(process.cwd(), configuredPath),
+        path.resolve(process.cwd(), "backend", configuredPath),
+        path.resolve(process.cwd(), "..", configuredPath)
+      ];
+
+  const configPath = candidates.find((candidate) => fs.existsSync(candidate));
+  if (!configPath) return {};
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    if (!parsed || typeof parsed !== "object") return {};
+    return parsed.mcpServers && typeof parsed.mcpServers === "object" ? parsed.mcpServers : parsed;
+  } catch (_error) {
+    return {};
+  }
+}
+
+function parseInlineConfig(): McpServerMap {
   if (!env.mcpGatewayServersJson) return {};
   try {
     const parsed = JSON.parse(env.mcpGatewayServersJson);
     if (!parsed || typeof parsed !== "object") return {};
-    return parsed;
+    return parsed.mcpServers && typeof parsed.mcpServers === "object" ? parsed.mcpServers : parsed;
   } catch (_error) {
     return {};
   }
+}
+
+function parseServerConfig(): McpServerMap {
+  return {
+    ...readConfigFile(),
+    ...parseInlineConfig()
+  };
 }
 
 function sourceSlug(source: string): string {
