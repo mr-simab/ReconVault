@@ -2,7 +2,7 @@
 
 Maintained by the RescueVault Team
 
-This folder is dedicated to the Linux/Kali-side local MCP server. The ReconVault backend can run on Windows while this MCP server runs on Kali Linux and exposes tool endpoints over HTTP.
+This folder is dedicated to the Linux/Kali-side local MCP server. The ReconVault backend can run on Windows while this MCP server runs on Kali Linux and exposes controlled tool endpoints over HTTP.
 
 ## Folder Contents
 
@@ -11,7 +11,7 @@ This folder is dedicated to the Linux/Kali-side local MCP server. The ReconVault
 - `requirements.txt`: Kali/Linux command-line tool manifest grouped by MCP source.
 - `server-requirements.txt`: Python packages needed by the local MCP server.
 
-The backend MCP URL config stays in:
+The backend MCP URL configuration stays in:
 
 ```text
 backend/config/mcp.servers.example.json
@@ -69,7 +69,7 @@ Edit `backend\config\mcp.servers.json` and set the Kali IP address:
 }
 ```
 
-Use the same `KALI_MCP_HOST:9101` for Network, Web, OSINT, and Cloud if you run the single local MCP server provided here.
+Use the same `KALI_MCP_HOST:9101` for Network, Web, OSINT, and Cloud when using the single local MCP server provided here.
 
 ## 2. Prepare Kali Linux
 
@@ -88,11 +88,21 @@ Check tool installation status:
 python3 rvault-tool-install.py
 ```
 
+Install and configure the optional ReconVault Privacy Proxy:
+
+```bash
+python3 rvault-tool-install.py --install-privacy-proxy
+```
+
+This installs `tor` and `proxychains4`, configures `/etc/proxychains4.conf` for `dynamic_chain`, `proxy_dns`, and `socks5 127.0.0.1 9050`, starts `tor@default`, and enables it on boot. Use `--dry-run` to review the planned commands before making changes.
+
 Install missing tools:
 
 ```bash
 python3 rvault-tool-install.py --install
 ```
+
+The installer uses host-native Kali/Linux methods such as `apt`, `go install`, `cargo install`, `pipx`, Ruby gems, and release tarballs. Docker-based installation paths are not supported for this local MCP setup.
 
 Preview install commands without changing the system:
 
@@ -145,7 +155,16 @@ Useful runtime variables:
 export RECONVAULT_MCP_WORDLIST=/usr/share/wordlists/dirb/common.txt
 export RECONVAULT_MCP_MAX_OUTPUT_BYTES=200000
 export RECONVAULT_MCP_TIMEOUT_SECONDS=180
+export RECONVAULT_MCP_PROXY_MODE=auto
 ```
+
+Proxy modes:
+
+- `auto`: use `proxychains4` when Tor service or SOCKS `127.0.0.1:9050` is active.
+- `always`: use `proxychains4` whenever the binary is available.
+- `off`: run tools directly.
+
+The MCP server reports proxy state in `/health` and includes proxy metadata in tool responses.
 
 ## 5. Tool Categories
 
@@ -157,7 +176,7 @@ The installer prints five MCP categories:
 - OSINT MCP
 - Cloud MCP
 
-Each tool is shown with an installed or missing mark on the right side. Missing tools are installed only when you pass `--install`.
+Each tool is shown with an installed or not-found status on the right side. Tools are installed only when you pass `--install`.
 
 ## 6. Backend Verification
 

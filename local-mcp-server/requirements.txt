@@ -6,7 +6,10 @@
 # apt:package-name
 # pipx:python-package-name
 # go:module@version
+# cargo:crate-name
 # gem:ruby-gem-name
+# tarbin:https://release-url.tar.gz,binary-name
+# Use installer_a||installer_b for ordered fallback installers.
 #
 # This file is not a pip requirements file. Python runtime packages are in
 # server-requirements.txt.
@@ -14,13 +17,13 @@
 Recon MCP|Amass|amass|apt:amass
 Recon MCP|Subfinder|subfinder|apt:subfinder
 Recon MCP|HTTPX Toolkit|httpx|apt:httpx-toolkit
-Recon MCP|Katana|katana|apt:katana
+Recon MCP|Katana|katana|go:github.com/projectdiscovery/katana/cmd/katana@latest
 Recon MCP|Waymore|waymore|pipx:waymore
-Recon MCP|GAU|gau|apt:gau
+Recon MCP|GAU|gau|go:github.com/lc/gau/v2/cmd/gau@latest
 Recon MCP|DNSRecon|dnsrecon|apt:dnsrecon
 Recon MCP|Fierce|fierce|apt:fierce
 Recon MCP|DNSEnum|dnsenum|apt:dnsenum
-Recon MCP|Waybackurls|waybackurls|apt:waybackurls
+Recon MCP|Waybackurls|waybackurls|go:github.com/tomnomnom/waybackurls@latest
 Recon MCP|Hakrawler|hakrawler|go:github.com/hakluke/hakrawler@latest
 Recon MCP|Assetfinder|assetfinder|apt:assetfinder
 
@@ -28,8 +31,8 @@ Network MCP|Nmap|nmap|apt:nmap
 Network MCP|Naabu|naabu|apt:naabu
 Network MCP|DNSX|dnsx|apt:dnsx
 Network MCP|Masscan|masscan|apt:masscan
-Network MCP|RustScan|rustscan|apt:rustscan
-Network MCP|AutoRecon|autorecon|pipx:git+https://github.com/Tib3rius/AutoRecon.git
+Network MCP|RustScan|rustscan|apt:rustscan||cargo:rustscan
+Network MCP|AutoRecon|autorecon|apt:autorecon||pipx:git+https://github.com/Tib3rius/AutoRecon.git
 Network MCP|enum4linux-ng|enum4linux-ng|apt:enum4linux-ng
 Network MCP|SSLScan|sslscan|apt:sslscan
 
@@ -44,14 +47,14 @@ Web MCP|Dirsearch|dirsearch|apt:dirsearch
 Web MCP|Arjun|arjun|pipx:arjun
 Web MCP|ParamSpider|paramspider|pipx:git+https://github.com/devanshbatham/ParamSpider.git
 Web MCP|WPScan|wpscan|gem:wpscan
-Web MCP|Dalfox|dalfox|apt:dalfox
+Web MCP|Dalfox|dalfox|go:github.com/hahwul/dalfox/v2@latest
 Web MCP|Jaeles|jaeles|go:github.com/jaeles-project/jaeles@latest
 Web MCP|OWASP ZAP Baseline|zap-baseline.py|apt:zaproxy
 
 OSINT MCP|Sherlock|sherlock|apt:sherlock
 OSINT MCP|Holehe|holehe|pipx:holehe
 OSINT MCP|theHarvester|theHarvester|apt:theharvester
-OSINT MCP|PhoneInfoga|phoneinfoga|apt:phoneinfoga
+OSINT MCP|PhoneInfoga|phoneinfoga|go:github.com/sundowndev/phoneinfoga/v2/cmd/phoneinfoga@latest
 OSINT MCP|ExifTool|exiftool|apt:libimage-exiftool-perl
 OSINT MCP|SpiderFoot|spiderfoot|apt:spiderfoot
 OSINT MCP|Recon-ng|recon-ng|apt:recon-ng
@@ -61,7 +64,7 @@ OSINT MCP|Censys CLI|censys|pipx:censys
 
 Cloud MCP|Trivy|trivy|apt:trivy
 Cloud MCP|Checkov|checkov|pipx:checkov
-Cloud MCP|Terrascan|terrascan|apt:terrascan
+Cloud MCP|Terrascan|terrascan|tarbin:https://github.com/tenable/terrascan/releases/latest/download/terrascan_linux_amd64.tar.gz,terrascan
 Cloud MCP|Prowler|prowler|pipx:prowler
-Cloud MCP|kube-bench|kube-bench|apt:kube-bench
+Cloud MCP|kube-bench|kube-bench|tarbin:https://github.com/aquasecurity/kube-bench/releases/latest/download/kube-bench_Linux_amd64.tar.gz,kube-bench
 Cloud MCP|kube-hunter|kube-hunter|pipx:kube-hunter

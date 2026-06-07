@@ -11,8 +11,8 @@ POST /mcp/tools/<source>/<tool>
   "metadata": {"source": "Recon MCP"}
 }
 
-It intentionally uses structured allowlisted command builders instead of raw
-shell strings. Set RECONVAULT_MCP_DRY_RUN=false to execute installed tools.
+It uses structured allowlisted command builders instead of raw shell strings.
+Set RECONVAULT_MCP_DRY_RUN=false to execute installed tools.
 High-intensity tools additionally require RECONVAULT_MCP_ALLOW_HIGH_INTENSITY=true.
 """
 
@@ -22,6 +22,7 @@ import argparse
 import json
 import os
 import shutil
+import socket
 import subprocess
 import time
 from typing import Any, Callable, Dict, List, Tuple
@@ -41,6 +42,11 @@ DRY_RUN = os.environ.get("RECONVAULT_MCP_DRY_RUN", "true").lower() != "false"
 ALLOW_HIGH_INTENSITY = os.environ.get("RECONVAULT_MCP_ALLOW_HIGH_INTENSITY", "false").lower() == "true"
 MAX_OUTPUT_BYTES = int(os.environ.get("RECONVAULT_MCP_MAX_OUTPUT_BYTES", "200000"))
 DEFAULT_TIMEOUT_SECONDS = int(os.environ.get("RECONVAULT_MCP_TIMEOUT_SECONDS", "180"))
+PROXY_MODE = os.environ.get("RECONVAULT_MCP_PROXY_MODE", "auto").lower()
+PROXYCHAINS_BIN = os.environ.get("RECONVAULT_MCP_PROXYCHAINS_BIN", "proxychains4")
+TOR_SERVICE = os.environ.get("RECONVAULT_MCP_TOR_SERVICE", "tor@default")
+TOR_SOCKS_HOST = os.environ.get("RECONVAULT_MCP_TOR_SOCKS_HOST", "127.0.0.1")
+TOR_SOCKS_PORT = int(os.environ.get("RECONVAULT_MCP_TOR_SOCKS_PORT", "9050"))
 
 
 def as_text(value: Any, default: str = "") -> str:
@@ -384,6 +390,64 @@ def truncate_output(value: str) -> str:
     return encoded[:MAX_OUTPUT_BYTES].decode("utf-8", errors="replace") + "\n[truncated]"
 
 
+def command_stdout(command: List[str], timeout: int = 3) -> str:
+    try:
+        result = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            shell=False,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return ""
+    return (result.stdout or "").strip()
+
+
+def tor_service_active() -> bool:
+    return command_stdout(["systemctl", "is-active", TOR_SERVICE]) == "active"
+
+
+def tor_socks_active() -> bool:
+    try:
+        with socket.create_connection((TOR_SOCKS_HOST, TOR_SOCKS_PORT), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
+def proxy_runtime_state() -> Dict[str, Any]:
+    proxychains_path = shutil.which(PROXYCHAINS_BIN)
+    service_active = tor_service_active()
+    socks_active = tor_socks_active()
+    proxy_available = bool(proxychains_path)
+    mode_enabled = PROXY_MODE not in {"off", "false", "0", "disabled", "none"}
+    force_proxy = PROXY_MODE in {"always", "force", "true", "1", "on"}
+    use_proxy = False
+
+    if mode_enabled and proxy_available:
+        use_proxy = force_proxy or service_active or socks_active
+
+    return {
+        "mode": PROXY_MODE,
+        "proxychains": proxy_available,
+        "proxychainsPath": proxychains_path,
+        "torService": TOR_SERVICE,
+        "torServiceActive": service_active,
+        "torSocks": f"{TOR_SOCKS_HOST}:{TOR_SOCKS_PORT}",
+        "torSocksActive": socks_active,
+        "usingProxy": use_proxy,
+    }
+
+
+def apply_proxychains(command: List[str], proxy_state: Dict[str, Any]) -> List[str]:
+    if not proxy_state.get("usingProxy"):
+        return command
+    proxychains_path = proxy_state.get("proxychainsPath") or PROXYCHAINS_BIN
+    return [proxychains_path, "-q"] + command
+
+
 def run_tool(source: str, tool: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
     normalized_tool = tool.strip().lower().replace("-", "_")
     if normalized_tool not in TOOL_BUILDERS:
@@ -408,13 +472,17 @@ def run_tool(source: str, tool: str, input_data: Dict[str, Any]) -> Dict[str, An
     except ValueError as error:
         return {"status": "failed", "tool": tool, "source": source, "reason": str(error)}
 
+    proxy_state = proxy_runtime_state()
+    planned_command = apply_proxychains(command.copy(), proxy_state)
+
     if DRY_RUN:
         return {
             "status": "planned",
             "tool": tool,
             "source": source,
             "dryRun": True,
-            "command": command,
+            "command": planned_command,
+            "proxy": proxy_state,
             "highIntensity": high_intensity,
         }
 
@@ -424,7 +492,8 @@ def run_tool(source: str, tool: str, input_data: Dict[str, Any]) -> Dict[str, An
             "tool": tool,
             "source": source,
             "reason": "High-intensity execution is disabled. Set RECONVAULT_MCP_ALLOW_HIGH_INTENSITY=true for authorized scopes.",
-            "command": command,
+            "command": planned_command,
+            "proxy": proxy_state,
         }
 
     executable = shutil.which(command[0])
@@ -435,9 +504,11 @@ def run_tool(source: str, tool: str, input_data: Dict[str, Any]) -> Dict[str, An
             "source": source,
             "reason": f"{command[0]} is not installed or not in PATH.",
             "command": command,
+            "proxy": proxy_state,
         }
 
     command[0] = executable
+    command = apply_proxychains(command, proxy_state)
     started = time.time()
     timeout = int(input_data.get("timeoutSeconds") or DEFAULT_TIMEOUT_SECONDS)
     try:
@@ -453,6 +524,7 @@ def run_tool(source: str, tool: str, input_data: Dict[str, Any]) -> Dict[str, An
             "tool": tool,
             "source": source,
             "command": command,
+            "proxy": proxy_state,
             "returnCode": result.returncode,
             "durationSeconds": round(time.time() - started, 3),
             "stdout": truncate_output(result.stdout or ""),
@@ -464,6 +536,8 @@ def run_tool(source: str, tool: str, input_data: Dict[str, Any]) -> Dict[str, An
             "tool": tool,
             "source": source,
             "reason": f"Tool timed out after {timeout} seconds.",
+            "command": command,
+            "proxy": proxy_state,
             "stdout": truncate_output(error.stdout or ""),
             "stderr": truncate_output(error.stderr or ""),
         }
@@ -480,6 +554,7 @@ def create_app() -> Flask:
                 "dryRun": DRY_RUN,
                 "allowHighIntensity": ALLOW_HIGH_INTENSITY,
                 "tools": len(TOOL_BUILDERS),
+                "proxy": proxy_runtime_state(),
             }
         )
 
@@ -509,6 +584,11 @@ def main() -> None:
     parser.add_argument("--host", default=os.environ.get("RECONVAULT_MCP_HOST", "0.0.0.0"))
     parser.add_argument("--port", type=int, default=int(os.environ.get("RECONVAULT_MCP_PORT", "9101")))
     args = parser.parse_args()
+    proxy_state = proxy_runtime_state()
+    if proxy_state.get("usingProxy"):
+        print(f"ReconVault Privacy Proxy is active; tool execution will use {PROXYCHAINS_BIN}.")
+    elif PROXY_MODE not in {"off", "false", "0", "disabled", "none"}:
+        print("ReconVault Privacy Proxy is inactive. Install and start Tor + ProxyChains4, or set RECONVAULT_MCP_PROXY_MODE=off.")
     create_app().run(host=args.host, port=args.port)
 
 
