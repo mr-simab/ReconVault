@@ -7,6 +7,10 @@ frontend/dist/
 coverage/
 *.tsbuildinfo
 
+# Python cache artifacts
+__pycache__/
+*.py[cod]
+
 # Environment files (keep examples tracked only in backend/frontend)
 backend/.env
 frontend/.env
